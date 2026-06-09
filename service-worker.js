@@ -1,4 +1,4 @@
-const cacheName = "kid-daily-v1";
+const cacheName = "kid-daily-v2";
 const appShell = [
   "/",
   "/index.html",
@@ -15,6 +15,20 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(cacheName).then((cache) => cache.addAll(appShell))
   );
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== cacheName)
+          .map((name) => caches.delete(name))
+      );
+    })
+  );
+  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
@@ -23,8 +37,16 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
+    fetch(event.request).then((networkResponse) => {
+      const responseCopy = networkResponse.clone();
+
+      caches.open(cacheName).then((cache) => {
+        cache.put(event.request, responseCopy);
+      });
+
+      return networkResponse;
+    }).catch(() => {
+      return caches.match(event.request);
     })
   );
 });

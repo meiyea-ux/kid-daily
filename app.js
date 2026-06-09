@@ -1,5 +1,6 @@
 const reportsStorageKey = "kidDailyDigitalReportsV2";
 const selectedChildStorageKey = "kidDailyDigitalSelectedChildV2";
+const reminderTimeStorageKey = "kidDailyReminderTimeV1";
 const supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co";
 const supabasePublishableKey = "sb_publishable_ZpSnxUTDfmVnu0MMGbcjOw_b_icH-Jl";
 const supabaseClient = window.supabase
@@ -89,6 +90,26 @@ function setText(id, text) {
 
 function setAuthMessage(text) {
   setText("auth-message", text);
+}
+
+function renderReminder() {
+  const savedTime = localStorage.getItem(reminderTimeStorageKey) || "20:30";
+  const input = document.getElementById("reminder-time");
+
+  if (input) {
+    input.value = savedTime;
+  }
+
+  setText("reminder-summary", `每天 ${savedTime} 提醒查看孩子数字日报`);
+}
+
+function saveReminder() {
+  const input = document.getElementById("reminder-time");
+  const time = input.value || "20:30";
+
+  localStorage.setItem(reminderTimeStorageKey, time);
+  renderReminder();
+  setText("save-status", `已保存每日提醒时间：${time}`);
 }
 
 function getSelectedChildIndex() {
@@ -892,9 +913,11 @@ document.getElementById("add-child-button").addEventListener("click", addChild);
 document.getElementById("sign-up-button").addEventListener("click", signUp);
 document.getElementById("sign-in-button").addEventListener("click", signIn);
 document.getElementById("sign-out-button").addEventListener("click", signOut);
+document.getElementById("save-reminder-button").addEventListener("click", saveReminder);
 
 renderWeeklyChart();
 renderWeeklyStats();
+renderReminder();
 registerServiceWorker();
 initAuth();
 localStorage.setItem(reportsStorageKey, JSON.stringify(dailyReports));

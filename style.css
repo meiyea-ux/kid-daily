@@ -319,6 +319,40 @@ a {
   font-weight: 700;
 }
 
+.reminder-panel {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border: 1px solid #dbeafe;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+}
+
+.reminder-panel strong {
+  display: block;
+  color: #172033;
+  font-size: 18px;
+}
+
+.reminder-input {
+  padding: 11px 14px;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #172033;
+  font: inherit;
+  font-weight: 900;
+}
+
+.reminder-input:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.18);
+  border-color: #2563eb;
+}
+
 .daily-conclusion-card {
   display: grid;
   grid-template-columns: 64px 1fr 220px;
@@ -1171,6 +1205,7 @@ a {
   .feature-grid,
   .overview-panel,
   .auth-panel,
+  .reminder-panel,
   .daily-conclusion-card,
   .import-panel,
   .weekly-panel,
