@@ -142,7 +142,127 @@ async function saveReportsToCloud() {
     return;
   }
 
-  setText("save-status", "已保存到云端和当前浏览器。");
+  try {
+    await syncReportsToProductTables();
+    setText("save-status", "已保存到云端、当前浏览器和正式数据表。");
+  } catch (syncError) {
+    setText("save-status", `已保存到云端；正式数据表同步失败：${syncError.message}`);
+  }
+}
+
+async function findOrCreateChild(report) {
+  const { data: existingChildren, error: selectError } = await supabaseClient
+    .from("children")
+    .select("id")
+    .eq("parent_user_id", currentUser.id)
+    .eq("name", report.name)
+    .limit(1);
+
+  if (selectError) {
+    throw selectError;
+  }
+
+  if (existingChildren.length > 0) {
+    return existingChildren[0].id;
+  }
+
+  const { data: child, error: insertError } = await supabaseClient
+    .from("children")
+    .insert({
+      parent_user_id: currentUser.id,
+      name: report.name,
+      device_name: "iPad / iPhone"
+    })
+    .select("id")
+    .single();
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  return child.id;
+}
+
+function normalizeTimeForDatabase(timeText) {
+  if (typeof timeText !== "string" || !/^\d{2}:\d{2}$/.test(timeText)) {
+    return null;
+  }
+
+  return timeText;
+}
+
+async function syncReportToProductTables(report) {
+  const childId = await findOrCreateChild(report);
+  const minutes = getReportMinutes(report);
+  const score = calculateGrowthScore(report);
+  const rating = getRating(score);
+
+  const { data: dailyReport, error: reportError } = await supabaseClient
+    .from("daily_reports")
+    .upsert(
+      {
+        child_id: childId,
+        parent_user_id: currentUser.id,
+        report_date: report.date,
+        total_minutes: minutes.totalMinutes,
+        learning_minutes: minutes.learningMinutes,
+        entertainment_minutes: minutes.entertainmentMinutes,
+        reading_minutes: minutes.readingMinutes,
+        growth_score: score,
+        rating,
+        ai_comment: createAiComment(report)
+      },
+      { onConflict: "child_id,report_date" }
+    )
+    .select("id")
+    .single();
+
+  if (reportError) {
+    throw reportError;
+  }
+
+  const { error: deleteError } = await supabaseClient
+    .from("app_usage")
+    .delete()
+    .eq("report_id", dailyReport.id)
+    .eq("parent_user_id", currentUser.id);
+
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  const appRows = getAppUsage(report).map((app) => ({
+    report_id: dailyReport.id,
+    parent_user_id: currentUser.id,
+    child_id: childId,
+    app_name: app.appName,
+    category: app.category || "其他",
+    minutes: app.minutes || 0,
+    start_time: normalizeTimeForDatabase(app.startTime),
+    end_time: normalizeTimeForDatabase(app.endTime)
+  }));
+
+  if (appRows.length === 0) {
+    return;
+  }
+
+  const { error: appUsageError } = await supabaseClient
+    .from("app_usage")
+    .insert(appRows);
+
+  if (appUsageError) {
+    throw appUsageError;
+  }
+}
+
+async function syncReportsToProductTables() {
+  if (!supabaseClient || !currentUser) {
+    return;
+  }
+
+  for (const report of dailyReports) {
+    await syncReportToProductTables(report);
+  }
 }
 
 async function loadReportsFromCloud(user) {
