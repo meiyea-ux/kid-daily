@@ -23,8 +23,8 @@
     <section class="import-panel">
       <div class="import-card">
         <span class="label">CSV 格式</span>
-        <h2>App名称,时间</h2>
-        <p>时间单位为分钟。第一行可以是表头。</p>
+        <h2>App名称,时间,开始时间</h2>
+        <p>时间单位为分钟。开始时间可选，格式例如 18:30。第一行可以是表头。</p>
 
         <label class="field-label" for="child-name-input">孩子姓名</label>
         <input id="child-name-input" class="text-input" type="text" value="Lucy">
@@ -33,10 +33,10 @@
         <input id="csv-file-input" class="file-input" type="file" accept=".csv,text/csv">
 
         <label class="field-label" for="csv-input">或直接粘贴 CSV</label>
-        <textarea id="csv-input" class="csv-input" spellcheck="false">App名称,时间
-YouTube,90
-ABC Reading,45
-Safari,20</textarea>
+        <textarea id="csv-input" class="csv-input" spellcheck="false">App名称,时间,开始时间
+YouTube,90,18:30
+ABC Reading,45,17:20
+Safari,20,20:15</textarea>
 
         <div class="import-actions">
           <button class="primary-button" type="button" id="generate-report-button">生成成长日报</button>

@@ -317,6 +317,8 @@ async function saveImportedReport() {
 
     if (saveTarget === "cloud") {
       setStatus("已生成日报，并保存到云端。正在打开日报页面...");
+    } else {
+      setStatus("已生成日报，并保存到当前浏览器。登录后可同步到云端。正在打开日报页面...");
     }
 
     window.location.href = "daily.html";
