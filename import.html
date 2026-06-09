@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>导入真实数据 - Kid Daily</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="daily-page">
+    <header class="page-header">
+      <a class="back-link" href="daily.html">返回日报</a>
+      <div class="brand-badge small">KD</div>
+      <p class="tagline">从 iPad 和 iPhone 使用记录生成日报</p>
+      <h1>导入真实数据</h1>
+      <p class="page-subtitle">粘贴或上传 CSV，Kid Daily 会自动生成数字成长日报。</p>
+    </header>
+
+    <section class="import-panel">
+      <div class="import-card">
+        <span class="label">CSV 格式</span>
+        <h2>App名称,时间</h2>
+        <p>时间单位为分钟。第一行可以是表头。</p>
+
+        <label class="field-label" for="child-name-input">孩子姓名</label>
+        <input id="child-name-input" class="text-input" type="text" value="Lucy">
+
+        <label class="field-label" for="csv-file-input">上传 CSV 文件</label>
+        <input id="csv-file-input" class="file-input" type="file" accept=".csv,text/csv">
+
+        <label class="field-label" for="csv-input">或直接粘贴 CSV</label>
+        <textarea id="csv-input" class="csv-input" spellcheck="false">App名称,时间
+YouTube,90
+ABC Reading,45
+Safari,20</textarea>
+
+        <div class="import-actions">
+          <button class="primary-button" type="button" id="generate-report-button">生成成长日报</button>
+          <button class="secondary-button" type="button" id="preview-button">预览数据</button>
+        </div>
+        <p class="ai-status" id="import-status">等待导入 CSV 数据。</p>
+      </div>
+
+      <div class="import-card preview-card">
+        <span class="label">生成预览</span>
+        <h2 id="preview-title">尚未生成</h2>
+        <div class="preview-list" id="preview-list"></div>
+      </div>
+    </section>
+  </main>
+  <script src="import.js"></script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数字成长日报 - Kid Daily</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="daily-page">
+    <header class="page-header">
+      <a class="back-link" href="index.html">返回首页</a>
+      <div class="brand-badge small">KD</div>
+      <p class="tagline">孩子 iPad 和 iPhone 使用情况</p>
+      <h1>数字成长日报</h1>
+      <p class="page-subtitle">用更清晰的数据，帮助家长理解孩子今天的数字生活。</p>
+    </header>
+
+    <section class="child-switcher" aria-label="选择孩子">
+      <button class="child-button active" type="button" data-child-index="0"></button>
+      <button class="child-button" type="button" data-child-index="1"></button>
+    </section>
+
+    <section class="save-panel" aria-label="保存日报数据">
+      <button class="save-button" type="button" id="save-data-button">保存数据</button>
+      <a class="secondary-button" href="import.html">导入 CSV</a>
+      <button class="secondary-button" type="button" id="export-report-button">导出日报</button>
+      <button class="secondary-button" type="button" id="print-report-button">打印 / 保存 PDF</button>
+      <p id="save-status">数据会保存在当前浏览器。</p>
+    </section>
+
+    <section class="daily-conclusion-card" id="daily-conclusion-card" aria-label="今日结论">
+      <div class="conclusion-icon" id="conclusion-icon"></div>
+      <div class="conclusion-copy">
+        <span class="label">今日结论</span>
+        <h2 id="conclusion-title"></h2>
+        <p id="conclusion-text"></p>
+      </div>
+      <div class="conclusion-action">
+        <span>明日建议</span>
+        <strong id="conclusion-action"></strong>
+      </div>
+    </section>
+
+    <section class="overview-panel" aria-label="数字成长评分">
+      <article class="score-card">
+        <div class="score-ring">
+          <strong id="growth-score"></strong>
+          <span>成长评分</span>
+        </div>
+        <div class="score-copy">
+          <span class="label">数字成长评分</span>
+          <h2 id="growth-rating"></h2>
+          <p>综合使用时长、学习占比、娱乐控制和阅读情况生成。</p>
+        </div>
+      </article>
+
+      <article class="trend-card">
+        <span class="label">趋势分析</span>
+        <h2>相比近期平均</h2>
+        <div class="trend-list">
+          <div>
+            <span>学习</span>
+            <strong class="trend-up" id="learning-trend"></strong>
+          </div>
+          <div>
+            <span>娱乐</span>
+            <strong class="trend-down" id="entertainment-trend"></strong>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="report-summary">
+      <div>
+        <span class="label">孩子</span>
+        <strong id="child-name"></strong>
+      </div>
+      <div>
+        <span class="label">日期</span>
+        <strong id="report-date"></strong>
+      </div>
+      <div>
+        <span class="label">今日总使用时间</span>
+        <strong id="total-usage"></strong>
+      </div>
+    </section>
+
+    <section class="report-grid" aria-label="数字成长日报数据">
+      <article class="report-card">
+        <span class="label">学习时间</span>
+        <h2 id="learning-time"></h2>
+        <p id="learning-text"></p>
+      </article>
+      <article class="report-card">
+        <span class="label">娱乐时间</span>
+        <h2 id="entertainment-time"></h2>
+        <p id="entertainment-text"></p>
+      </article>
+      <article class="report-card">
+        <span class="label">阅读时间</span>
+        <h2 id="reading-time"></h2>
+        <p id="reading-text"></p>
+      </article>
+      <article class="report-card">
+        <span class="label">最常使用 App</span>
+        <h2>最常使用应用</h2>
+        <ul class="app-list" id="top-apps"></ul>
+      </article>
+    </section>
+
+    <section class="usage-breakdown-card" aria-label="使用时间分布">
+      <div class="usage-chart">
+        <div class="usage-donut" id="usage-donut">
+          <strong id="usage-donut-total"></strong>
+          <span>总使用</span>
+        </div>
+      </div>
+      <div class="usage-copy">
+        <span class="label">使用时间分布</span>
+        <h2>学习、娱乐、阅读占比</h2>
+        <div class="usage-list">
+          <div>
+            <span>学习</span>
+            <strong id="learning-percent"></strong>
+            <em><i id="learning-bar"></i></em>
+          </div>
+          <div>
+            <span>娱乐</span>
+            <strong id="entertainment-percent"></strong>
+            <em><i id="entertainment-bar"></i></em>
+          </div>
+          <div>
+            <span>阅读</span>
+            <strong id="reading-percent"></strong>
+            <em><i id="reading-bar"></i></em>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="risk-card" aria-label="风险提醒">
+      <span class="label">风险提醒</span>
+      <h2>需要家长关注的地方</h2>
+      <div class="risk-list" id="risk-list"></div>
+    </section>
+
+    <section class="app-detail-card" aria-label="应用使用明细">
+      <span class="label">应用使用明细</span>
+      <h2>每个 App 的使用时间</h2>
+      <div class="app-detail-list" id="app-detail-list"></div>
+    </section>
+
+    <section class="app-pie-card" aria-label="App 使用占比">
+      <div class="app-pie-chart" id="app-pie-chart">
+        <strong id="app-pie-total"></strong>
+        <span>总时长</span>
+      </div>
+      <div class="app-pie-copy">
+        <span class="label">App 使用占比</span>
+        <h2>每个 App 占用了多少时间</h2>
+        <div class="app-pie-legend" id="app-pie-legend"></div>
+      </div>
+    </section>
+
+    <section class="app-timeline-card" aria-label="今日使用时间轴">
+      <span class="label">今日使用时间轴</span>
+      <h2>孩子什么时候在用设备</h2>
+      <div class="timeline-axis">
+        <span>06:00</span>
+        <span>12:00</span>
+        <span>18:00</span>
+        <span>24:00</span>
+      </div>
+      <div class="app-timeline-list" id="app-timeline-list"></div>
+    </section>
+
+    <section class="weekly-panel" aria-label="7天趋势图">
+      <article class="weekly-chart-card">
+        <span class="label">趋势分析</span>
+        <h2>7天成长评分趋势</h2>
+        <div class="weekly-chart" id="weekly-chart"></div>
+      </article>
+
+      <article class="weekly-summary-card">
+        <span class="label">本周总结</span>
+        <h2>家长关注重点</h2>
+        <p id="weekly-summary"></p>
+      </article>
+    </section>
+
+    <section class="weekly-stats-card" aria-label="每周统计">
+      <span class="label">每周统计</span>
+      <h2>这一周的数字使用概览</h2>
+      <div class="weekly-stats-grid" id="weekly-stats-grid"></div>
+    </section>
+
+    <section class="ai-comment-box">
+      <span class="label">AI 成长建议</span>
+      <h2>给家长的专业建议</h2>
+      <p id="ai-comment"></p>
+      <button class="ai-button" type="button" id="generate-ai-button">生成真实 AI 建议</button>
+      <p class="ai-status" id="ai-status">当前显示模拟 AI 成长建议。</p>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
