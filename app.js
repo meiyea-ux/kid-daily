@@ -5,6 +5,7 @@ const supabasePublishableKey = "sb_publishable_ZpSnxUTDfmVnu0MMGbcjOw_b_icH-Jl";
 const supabaseClient = window.supabase
   ? window.supabase.createClient(supabaseUrl, supabasePublishableKey)
   : null;
+let currentUser = null;
 
 const weeklyTrend = [
   { day: "周一", score: 76 },
@@ -68,7 +69,7 @@ const defaultDailyReports = [
 ];
 
 const savedReports = localStorage.getItem(reportsStorageKey);
-const dailyReports = savedReports ? JSON.parse(savedReports) : defaultDailyReports;
+let dailyReports = savedReports ? JSON.parse(savedReports) : defaultDailyReports;
 
 function setText(id, text) {
   const element = document.getElementById(id);
@@ -82,10 +83,73 @@ function setAuthMessage(text) {
   setText("auth-message", text);
 }
 
+function getSelectedChildIndex() {
+  const activeButton = document.querySelector(".child-button.active");
+
+  if (activeButton) {
+    return Number(activeButton.dataset.childIndex);
+  }
+
+  const savedSelectedChild = Number(localStorage.getItem(selectedChildStorageKey));
+
+  return Number.isInteger(savedSelectedChild) ? savedSelectedChild : 0;
+}
+
+async function saveReportsToCloud() {
+  if (!supabaseClient || !currentUser) {
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("kid_daily_user_data")
+    .upsert({
+      user_id: currentUser.id,
+      reports: dailyReports,
+      selected_child_index: getSelectedChildIndex()
+    });
+
+  if (error) {
+    setText("save-status", `云端保存失败：${error.message}`);
+    return;
+  }
+
+  setText("save-status", "已保存到云端和当前浏览器。");
+}
+
+async function loadReportsFromCloud(user) {
+  if (!supabaseClient || !user) {
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("kid_daily_user_data")
+    .select("reports, selected_child_index")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    setText("save-status", `云端读取失败：${error.message}`);
+    return;
+  }
+
+  if (data?.reports?.length) {
+    dailyReports = data.reports;
+    localStorage.setItem(reportsStorageKey, JSON.stringify(dailyReports));
+    localStorage.setItem(selectedChildStorageKey, String(data.selected_child_index || 0));
+    renderChildButtons(data.selected_child_index || 0);
+    showReport(data.selected_child_index || 0);
+    setText("save-status", "已从云端读取数据。");
+    return;
+  }
+
+  await saveReportsToCloud();
+}
+
 function setAuthView(user) {
   const appContent = document.getElementById("app-content");
   const authForm = document.getElementById("auth-form");
   const authUser = document.getElementById("auth-user");
+  currentUser = user;
 
   if (user) {
     appContent.classList.remove("locked");
@@ -93,7 +157,8 @@ function setAuthView(user) {
     authUser.style.display = "grid";
     setText("auth-title", "已登录，可以查看孩子日报");
     setText("auth-user-email", user.email);
-    setAuthMessage("账号登录成功。当前数据仍保存在这个浏览器里，下一步可以继续做云端保存。");
+    setAuthMessage("账号登录成功。正在同步云端数据。");
+    loadReportsFromCloud(user);
     return;
   }
 
@@ -620,6 +685,7 @@ function renderRiskAlerts(minutes) {
 function saveReports() {
   localStorage.setItem(reportsStorageKey, JSON.stringify(dailyReports));
   setText("save-status", "已保存到当前浏览器。");
+  saveReportsToCloud();
 }
 
 function createReportForChild(name) {
@@ -822,7 +888,7 @@ document.getElementById("sign-out-button").addEventListener("click", signOut);
 renderWeeklyChart();
 renderWeeklyStats();
 initAuth();
-saveReports();
+localStorage.setItem(reportsStorageKey, JSON.stringify(dailyReports));
 
 const savedSelectedChild = Number(localStorage.getItem(selectedChildStorageKey));
 const startIndex = Number.isInteger(savedSelectedChild) && dailyReports[savedSelectedChild] ? savedSelectedChild : 0;
