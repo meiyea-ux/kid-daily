@@ -295,7 +295,111 @@ async function saveImportedReportToCloud(nextReports, selectedChildIndex) {
     throw new Error(`云端保存失败：${error.message}`);
   }
 
+  await syncImportedReportToProductTables(nextReports[selectedChildIndex], user);
+
   return "cloud";
+}
+
+async function findOrCreateChild(report, user) {
+  const { data: existingChildren, error: selectError } = await supabaseClient
+    .from("children")
+    .select("id")
+    .eq("parent_user_id", user.id)
+    .eq("name", report.name)
+    .limit(1);
+
+  if (selectError) {
+    throw selectError;
+  }
+
+  if (existingChildren.length > 0) {
+    return existingChildren[0].id;
+  }
+
+  const { data: child, error: insertError } = await supabaseClient
+    .from("children")
+    .insert({
+      parent_user_id: user.id,
+      name: report.name,
+      device_name: "iPad / iPhone"
+    })
+    .select("id")
+    .single();
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  return child.id;
+}
+
+function normalizeTimeForDatabase(timeText) {
+  if (typeof timeText !== "string" || !/^\d{2}:\d{2}$/.test(timeText)) {
+    return null;
+  }
+
+  return timeText;
+}
+
+async function syncImportedReportToProductTables(report, user) {
+  const childId = await findOrCreateChild(report, user);
+
+  const { data: dailyReport, error: reportError } = await supabaseClient
+    .from("daily_reports")
+    .upsert(
+      {
+        child_id: childId,
+        parent_user_id: user.id,
+        report_date: report.date,
+        total_minutes: report.totalMinutes,
+        learning_minutes: report.learningMinutes,
+        entertainment_minutes: report.entertainmentMinutes,
+        reading_minutes: report.readingMinutes,
+        growth_score: calculateGrowthScore(report),
+        rating: getRating(calculateGrowthScore(report)),
+        ai_comment: report.aiComment || buildAiComment(report)
+      },
+      { onConflict: "child_id,report_date" }
+    )
+    .select("id")
+    .single();
+
+  if (reportError) {
+    throw reportError;
+  }
+
+  const { error: deleteError } = await supabaseClient
+    .from("app_usage")
+    .delete()
+    .eq("report_id", dailyReport.id)
+    .eq("parent_user_id", user.id);
+
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  const appRows = report.appUsage.map((app) => ({
+    report_id: dailyReport.id,
+    parent_user_id: user.id,
+    child_id: childId,
+    app_name: app.appName,
+    category: app.category || "其他",
+    minutes: app.minutes || 0,
+    start_time: normalizeTimeForDatabase(app.startTime),
+    end_time: normalizeTimeForDatabase(app.endTime)
+  }));
+
+  if (appRows.length === 0) {
+    return;
+  }
+
+  const { error: appUsageError } = await supabaseClient
+    .from("app_usage")
+    .insert(appRows);
+
+  if (appUsageError) {
+    throw appUsageError;
+  }
 }
 
 async function saveImportedReport() {
