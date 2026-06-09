@@ -1184,6 +1184,116 @@ a {
   font-weight: 700;
 }
 
+.child-app-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 18px 48px;
+  box-sizing: border-box;
+}
+
+.child-hero {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.child-hero h1 {
+  margin: 0;
+  font-size: 38px;
+  line-height: 1.16;
+}
+
+.child-hero p {
+  margin: 12px auto 0;
+  max-width: 560px;
+  color: #64748b;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.child-auth-card,
+.child-upload-card,
+.child-preview-card {
+  margin-bottom: 16px;
+  padding: 24px;
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.07);
+}
+
+.child-auth-card h2,
+.child-upload-card h2,
+.child-preview-card h2 {
+  margin: 6px 0 10px;
+  font-size: 25px;
+}
+
+.child-auth-card p,
+.child-preview-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.child-auth-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.child-auth-user {
+  display: none;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.child-auth-user span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.child-auth-user button {
+  grid-row: span 2;
+}
+
+.child-upload-card.locked {
+  opacity: 0.52;
+  pointer-events: none;
+}
+
+.child-section-heading {
+  margin-bottom: 16px;
+}
+
+.mobile-app-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.mobile-app-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.9fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+
+.child-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
 @media (max-width: 720px) {
   .home-page {
     padding: 28px 16px;
@@ -1283,6 +1393,40 @@ a {
 
   .timeline-item em {
     text-align: left;
+  }
+
+  .child-app-page {
+    padding: 22px 14px 36px;
+  }
+
+  .child-hero {
+    text-align: left;
+  }
+
+  .child-hero h1 {
+    font-size: 34px;
+  }
+
+  .child-auth-card,
+  .child-upload-card,
+  .child-preview-card {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .child-auth-form,
+  .child-auth-user,
+  .mobile-app-row {
+    grid-template-columns: 1fr;
+  }
+
+  .child-actions {
+    flex-direction: column;
+  }
+
+  .child-actions .primary-button,
+  .child-actions .secondary-button {
+    width: 100%;
   }
 
 }

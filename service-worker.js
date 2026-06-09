@@ -1,12 +1,14 @@
-const cacheName = "kid-daily-v2";
+const cacheName = "kid-daily-v3";
 const appShell = [
   "/",
   "/index.html",
   "/daily.html",
   "/import.html",
+  "/child.html",
   "/style.css",
   "/app.js",
   "/import.js",
+  "/child.js",
   "/manifest.json",
   "/icon.svg"
 ];

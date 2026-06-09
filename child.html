@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
+  <title>孩子端上传 - Kid Daily</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="child-app-page">
+    <header class="child-hero">
+      <a class="back-link" href="index.html">返回首页</a>
+      <div class="brand-badge small">KD</div>
+      <p class="tagline">孩子端上传</p>
+      <h1>上传今天的屏幕使用</h1>
+      <p>先做手动上传版本：在孩子的 iPad 或 iPhone 上填写 App 使用时间，家长端会自动生成日报。</p>
+    </header>
+
+    <section class="child-auth-card" id="child-auth-card">
+      <span class="label">家长账号</span>
+      <h2>登录后上传到云端</h2>
+      <p id="child-auth-message">请使用家长账号登录。这个版本不会自动读取屏幕使用时间，需要手动填写。</p>
+      <div class="child-auth-form">
+        <input class="auth-input" id="child-auth-email" type="email" placeholder="邮箱">
+        <input class="auth-input" id="child-auth-password" type="password" placeholder="密码">
+        <button class="save-button" type="button" id="child-sign-in-button">登录</button>
+      </div>
+      <div class="child-auth-user" id="child-auth-user">
+        <span>当前账号</span>
+        <strong id="child-auth-email-text"></strong>
+        <button class="secondary-button" type="button" id="child-sign-out-button">退出</button>
+      </div>
+    </section>
+
+    <section class="child-upload-card locked" id="child-upload-card">
+      <div class="child-section-heading">
+        <span class="label">今日数据</span>
+        <h2>填写 App 使用记录</h2>
+      </div>
+
+      <label class="field-label" for="child-name">孩子姓名</label>
+      <input class="text-input" id="child-name" type="text" value="Lucy">
+
+      <div class="mobile-app-list" id="mobile-app-list">
+        <div class="mobile-app-row">
+          <input class="text-input" data-field="appName" type="text" value="YouTube Kids" aria-label="App 名称">
+          <input class="text-input" data-field="minutes" type="number" min="0" value="90" aria-label="分钟">
+          <input class="text-input" data-field="startTime" type="time" value="18:30" aria-label="开始时间">
+        </div>
+        <div class="mobile-app-row">
+          <input class="text-input" data-field="appName" type="text" value="ABC Reading" aria-label="App 名称">
+          <input class="text-input" data-field="minutes" type="number" min="0" value="45" aria-label="分钟">
+          <input class="text-input" data-field="startTime" type="time" value="17:20" aria-label="开始时间">
+        </div>
+        <div class="mobile-app-row">
+          <input class="text-input" data-field="appName" type="text" value="Safari" aria-label="App 名称">
+          <input class="text-input" data-field="minutes" type="number" min="0" value="20" aria-label="分钟">
+          <input class="text-input" data-field="startTime" type="time" value="20:15" aria-label="开始时间">
+        </div>
+      </div>
+
+      <div class="child-actions">
+        <button class="secondary-button" type="button" id="add-mobile-app-button">新增一行</button>
+        <button class="primary-button" type="button" id="upload-mobile-report-button">上传今日数据</button>
+      </div>
+
+      <p class="ai-status" id="child-upload-status">等待上传。</p>
+    </section>
+
+    <section class="child-preview-card" id="child-preview-card">
+      <span class="label">上传说明</span>
+      <h2>当前是手机客户端 MVP</h2>
+      <p>这个页面适合先验证“孩子设备上传，家长网页查看”的闭环。真正自动读取 iOS 屏幕使用时间，需要后续开发原生 iOS App。</p>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="pwa.js"></script>
+  <script src="child.js"></script>
+</body>
+</html>
