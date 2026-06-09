@@ -1,5 +1,10 @@
 const reportsStorageKey = "kidDailyDigitalReportsV2";
 const selectedChildStorageKey = "kidDailyDigitalSelectedChildV2";
+const supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co";
+const supabasePublishableKey = "sb_publishable_ZpSnxUTDfmVnu0MMGbcjOw_b_icH-Jl";
+const supabaseClient = window.supabase
+  ? window.supabase.createClient(supabaseUrl, supabasePublishableKey)
+  : null;
 
 const csvInput = document.getElementById("csv-input");
 const fileInput = document.getElementById("csv-file-input");
@@ -261,7 +266,39 @@ function previewReport() {
   }
 }
 
-function saveImportedReport() {
+async function getCurrentUser() {
+  if (!supabaseClient) {
+    return null;
+  }
+
+  const { data } = await supabaseClient.auth.getUser();
+
+  return data.user || null;
+}
+
+async function saveImportedReportToCloud(nextReports, selectedChildIndex) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return "local-only";
+  }
+
+  const { error } = await supabaseClient
+    .from("kid_daily_user_data")
+    .upsert({
+      user_id: user.id,
+      reports: nextReports,
+      selected_child_index: selectedChildIndex
+    });
+
+  if (error) {
+    throw new Error(`云端保存失败：${error.message}`);
+  }
+
+  return "cloud";
+}
+
+async function saveImportedReport() {
   const report = previewReport();
 
   if (!report) {
@@ -275,7 +312,17 @@ function saveImportedReport() {
   localStorage.setItem(reportsStorageKey, JSON.stringify(nextReports));
   localStorage.setItem(selectedChildStorageKey, "0");
   setStatus("已生成日报，正在打开日报页面...");
-  window.location.href = "daily.html";
+  try {
+    const saveTarget = await saveImportedReportToCloud(nextReports, 0);
+
+    if (saveTarget === "cloud") {
+      setStatus("已生成日报，并保存到云端。正在打开日报页面...");
+    }
+
+    window.location.href = "daily.html";
+  } catch (error) {
+    setStatus(error.message);
+  }
 }
 
 fileInput.addEventListener("change", () => {
