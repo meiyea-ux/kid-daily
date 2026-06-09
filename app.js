@@ -7,6 +7,14 @@ const supabaseClient = window.supabase
   : null;
 let currentUser = null;
 
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  navigator.serviceWorker.register("/service-worker.js");
+}
+
 const weeklyTrend = [
   { day: "周一", score: 76 },
   { day: "周二", score: 78 },
@@ -887,6 +895,7 @@ document.getElementById("sign-out-button").addEventListener("click", signOut);
 
 renderWeeklyChart();
 renderWeeklyStats();
+registerServiceWorker();
 initAuth();
 localStorage.setItem(reportsStorageKey, JSON.stringify(dailyReports));
 
