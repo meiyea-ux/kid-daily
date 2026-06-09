@@ -517,6 +517,16 @@ function saveReports() {
   setText("save-status", "已保存到当前浏览器。");
 }
 
+function createReportForChild(name) {
+  const template = defaultDailyReports[0];
+
+  return {
+    ...JSON.parse(JSON.stringify(template)),
+    name,
+    date: new Date().toISOString().slice(0, 10)
+  };
+}
+
 function getActiveReport() {
   const activeButton = document.querySelector(".child-button.active");
   const activeIndex = activeButton ? Number(activeButton.dataset.childIndex) : 0;
@@ -647,24 +657,59 @@ function showReport(index) {
   });
 }
 
-document.querySelectorAll(".child-button").forEach((button) => {
-  const report = dailyReports[Number(button.dataset.childIndex)];
+function renderChildButtons(activeIndex = 0) {
+  const switcher = document.getElementById("child-switcher");
 
-  if (report) {
-    button.textContent = report.name;
+  if (!switcher) {
+    return;
   }
-});
 
-document.querySelectorAll(".child-button").forEach((button) => {
-  button.addEventListener("click", () => {
-    showReport(Number(button.dataset.childIndex));
+  switcher.innerHTML = "";
+
+  dailyReports.forEach((report, index) => {
+    const button = document.createElement("button");
+
+    button.className = "child-button";
+    button.type = "button";
+    button.dataset.childIndex = String(index);
+    button.textContent = report.name;
+    button.classList.toggle("active", index === activeIndex);
+    button.addEventListener("click", () => {
+      showReport(index);
+    });
+    switcher.appendChild(button);
   });
-});
+}
+
+function addChild() {
+  const input = document.getElementById("new-child-name");
+  const name = input.value.trim();
+
+  if (!name) {
+    setText("save-status", "请先输入孩子名字。");
+    return;
+  }
+
+  const exists = dailyReports.some((report) => report.name.toLowerCase() === name.toLowerCase());
+
+  if (exists) {
+    setText("save-status", "这个孩子已经存在，请换一个名字。");
+    return;
+  }
+
+  dailyReports.push(createReportForChild(name));
+  input.value = "";
+  saveReports();
+  renderChildButtons(dailyReports.length - 1);
+  showReport(dailyReports.length - 1);
+  setText("save-status", `已新增孩子：${name}`);
+}
 
 document.getElementById("save-data-button").addEventListener("click", saveReports);
 document.getElementById("generate-ai-button").addEventListener("click", generateRealAiComment);
 document.getElementById("export-report-button").addEventListener("click", exportReport);
 document.getElementById("print-report-button").addEventListener("click", printReport);
+document.getElementById("add-child-button").addEventListener("click", addChild);
 
 renderWeeklyChart();
 renderWeeklyStats();
@@ -673,4 +718,5 @@ saveReports();
 const savedSelectedChild = Number(localStorage.getItem(selectedChildStorageKey));
 const startIndex = Number.isInteger(savedSelectedChild) && dailyReports[savedSelectedChild] ? savedSelectedChild : 0;
 
+renderChildButtons(startIndex);
 showReport(startIndex);

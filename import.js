@@ -270,7 +270,7 @@ function saveImportedReport() {
 
   const savedReports = JSON.parse(localStorage.getItem(reportsStorageKey) || "null") || fallbackReports;
   const remainingReports = savedReports.filter((savedReport) => savedReport.name !== report.name);
-  const nextReports = [report, ...remainingReports].slice(0, 2);
+  const nextReports = [report, ...remainingReports];
 
   localStorage.setItem(reportsStorageKey, JSON.stringify(nextReports));
   localStorage.setItem(selectedChildStorageKey, "0");

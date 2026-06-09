@@ -16,9 +16,12 @@
       <p class="page-subtitle">用更清晰的数据，帮助家长理解孩子今天的数字生活。</p>
     </header>
 
-    <section class="child-switcher" aria-label="选择孩子">
-      <button class="child-button active" type="button" data-child-index="0"></button>
-      <button class="child-button" type="button" data-child-index="1"></button>
+    <section class="child-switcher" id="child-switcher" aria-label="选择孩子">
+    </section>
+
+    <section class="add-child-panel" aria-label="新增孩子">
+      <input class="child-name-input" id="new-child-name" type="text" placeholder="输入孩子名字，例如 Leo">
+      <button class="secondary-button" type="button" id="add-child-button">新增孩子</button>
     </section>
 
     <section class="save-panel" aria-label="保存日报数据">
