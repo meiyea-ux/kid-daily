@@ -16,6 +16,27 @@
       <p class="page-subtitle">用更清晰的数据，帮助家长理解孩子今天的数字生活。</p>
     </header>
 
+    <section class="auth-panel" id="auth-panel" aria-label="账号登录">
+      <div class="auth-copy">
+        <span class="label">家长账号</span>
+        <h2 id="auth-title">登录后查看孩子日报</h2>
+        <p id="auth-message">使用邮箱和密码登录。第一次使用可以先注册账号。</p>
+      </div>
+      <div class="auth-form" id="auth-form">
+        <input class="auth-input" id="auth-email" type="email" placeholder="邮箱">
+        <input class="auth-input" id="auth-password" type="password" placeholder="密码，至少 6 位">
+        <button class="save-button" type="button" id="sign-in-button">登录</button>
+        <button class="secondary-button" type="button" id="sign-up-button">注册</button>
+      </div>
+      <div class="auth-user" id="auth-user">
+        <span>当前账号</span>
+        <strong id="auth-user-email"></strong>
+        <button class="secondary-button" type="button" id="sign-out-button">退出登录</button>
+      </div>
+    </section>
+
+    <div class="app-content locked" id="app-content">
+
     <section class="child-switcher" id="child-switcher" aria-label="选择孩子">
     </section>
 
@@ -205,7 +226,9 @@
       <button class="ai-button" type="button" id="generate-ai-button">生成真实 AI 建议</button>
       <p class="ai-status" id="ai-status">当前显示模拟 AI 成长建议。</p>
     </section>
+    </div>
   </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

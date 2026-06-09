@@ -1,5 +1,10 @@
 const reportsStorageKey = "kidDailyDigitalReportsV2";
 const selectedChildStorageKey = "kidDailyDigitalSelectedChildV2";
+const supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co";
+const supabasePublishableKey = "sb_publishable_ZpSnxUTDfmVnu0MMGbcjOw_b_icH-Jl";
+const supabaseClient = window.supabase
+  ? window.supabase.createClient(supabaseUrl, supabasePublishableKey)
+  : null;
 
 const weeklyTrend = [
   { day: "周一", score: 76 },
@@ -71,6 +76,106 @@ function setText(id, text) {
   if (element) {
     element.textContent = text;
   }
+}
+
+function setAuthMessage(text) {
+  setText("auth-message", text);
+}
+
+function setAuthView(user) {
+  const appContent = document.getElementById("app-content");
+  const authForm = document.getElementById("auth-form");
+  const authUser = document.getElementById("auth-user");
+
+  if (user) {
+    appContent.classList.remove("locked");
+    authForm.style.display = "none";
+    authUser.style.display = "grid";
+    setText("auth-title", "已登录，可以查看孩子日报");
+    setText("auth-user-email", user.email);
+    setAuthMessage("账号登录成功。当前数据仍保存在这个浏览器里，下一步可以继续做云端保存。");
+    return;
+  }
+
+  appContent.classList.add("locked");
+  authForm.style.display = "grid";
+  authUser.style.display = "none";
+  setText("auth-title", "登录后查看孩子日报");
+  setText("auth-user-email", "");
+  setAuthMessage("使用邮箱和密码登录。第一次使用可以先注册账号。");
+}
+
+function getAuthInput() {
+  return {
+    email: document.getElementById("auth-email").value.trim(),
+    password: document.getElementById("auth-password").value
+  };
+}
+
+async function signUp() {
+  const { email, password } = getAuthInput();
+
+  if (!email || !password) {
+    setAuthMessage("请先输入邮箱和密码。");
+    return;
+  }
+
+  if (password.length < 6) {
+    setAuthMessage("密码至少需要 6 位。");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    setAuthMessage(error.message);
+    return;
+  }
+
+  setAuthMessage("注册成功。请检查邮箱确认邮件；如果项目关闭了邮箱确认，也可以直接点击登录。");
+}
+
+async function signIn() {
+  const { email, password } = getAuthInput();
+
+  if (!email || !password) {
+    setAuthMessage("请先输入邮箱和密码。");
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    setAuthMessage(error.message);
+    return;
+  }
+
+  setAuthView(data.user);
+}
+
+async function signOut() {
+  await supabaseClient.auth.signOut();
+  setAuthView(null);
+}
+
+async function initAuth() {
+  if (!supabaseClient) {
+    setAuthMessage("Supabase 没有加载成功，请检查网络后刷新页面。");
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getUser();
+  setAuthView(data.user);
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    setAuthView(session?.user || null);
+  });
 }
 
 function parseDuration(text) {
@@ -710,9 +815,13 @@ document.getElementById("generate-ai-button").addEventListener("click", generate
 document.getElementById("export-report-button").addEventListener("click", exportReport);
 document.getElementById("print-report-button").addEventListener("click", printReport);
 document.getElementById("add-child-button").addEventListener("click", addChild);
+document.getElementById("sign-up-button").addEventListener("click", signUp);
+document.getElementById("sign-in-button").addEventListener("click", signIn);
+document.getElementById("sign-out-button").addEventListener("click", signOut);
 
 renderWeeklyChart();
 renderWeeklyStats();
+initAuth();
 saveReports();
 
 const savedSelectedChild = Number(localStorage.getItem(selectedChildStorageKey));

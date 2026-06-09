@@ -187,6 +187,83 @@ a {
   margin-bottom: 14px;
 }
 
+.auth-panel {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 24px;
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.07);
+}
+
+.auth-copy h2 {
+  margin: 0 0 8px;
+  font-size: 25px;
+}
+
+.auth-copy p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.auth-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 10px;
+}
+
+.auth-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #172033;
+  font: inherit;
+  font-weight: 700;
+}
+
+.auth-input:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.18);
+  border-color: #2563eb;
+}
+
+.auth-user {
+  display: none;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+  justify-self: end;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.auth-user span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.auth-user strong {
+  color: #172033;
+  font-size: 16px;
+}
+
+.auth-user button {
+  grid-row: span 2;
+}
+
+.app-content.locked {
+  display: none;
+}
+
 .child-button {
   min-width: 116px;
   padding: 11px 18px;
@@ -1093,6 +1170,7 @@ a {
 
   .feature-grid,
   .overview-panel,
+  .auth-panel,
   .daily-conclusion-card,
   .import-panel,
   .weekly-panel,
@@ -1125,6 +1203,12 @@ a {
   .score-card {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .auth-form,
+  .auth-user {
+    grid-template-columns: 1fr;
+    justify-self: stretch;
   }
 
   .daily-conclusion-card {
