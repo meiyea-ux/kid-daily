@@ -25,6 +25,19 @@ function setAuthMessage(text) {
   setText("child-auth-message", text);
 }
 
+function showUploadSuccess(report) {
+  const card = document.getElementById("child-success-card");
+
+  if (!card) {
+    return;
+  }
+
+  setText("success-child-name", report.name);
+  setText("success-total-time", formatMinutes(report.totalMinutes));
+  setText("success-score", `${report.growthScore}分`);
+  card.classList.add("visible");
+}
+
 function formatMinutes(minutes) {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
@@ -362,6 +375,7 @@ async function uploadMobileReport() {
     await saveReportToCloud(report, nextReports);
     cloudReports = nextReports;
     setUploadStatus(`上传成功：${report.name} 今天总使用 ${formatMinutes(report.totalMinutes)}，成长评分 ${report.growthScore} 分。`);
+    showUploadSuccess(report);
   } catch (error) {
     setUploadStatus(`上传失败：${error.message}`);
   }
