@@ -81,6 +81,14 @@ Kid Daily iOS App 需要研究和使用这些 Apple 框架：
 
 ## Supabase 数据表设计
 
+项目中已经准备了建表脚本：
+
+```text
+SUPABASE_PRODUCT_SCHEMA.sql
+```
+
+这套表结构不会替换当前网页正在使用的 `kid_daily_user_data` JSON 保存方式。它是下一阶段给 iOS App、微信小程序、自动上传服务使用的正式数据结构。
+
 ### profiles
 
 保存家长账号信息。
@@ -220,4 +228,3 @@ iOS App 上传的数据最终也要进入 Supabase。先把云端数据结构做
 → 换电脑也能看到
 → 后续 iOS App 直接上传到同一套数据表
 ```
-
