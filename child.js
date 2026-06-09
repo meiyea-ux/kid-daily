@@ -7,6 +7,7 @@ const supabaseClient = window.supabase
   : null;
 
 let currentUser = null;
+let cloudReports = [];
 
 function setText(id, text) {
   const element = document.getElementById(id);
@@ -184,15 +185,40 @@ function buildReportFromRows(rows) {
   return report;
 }
 
-function saveToLocalReports(report) {
-  const savedReports = JSON.parse(localStorage.getItem(reportsStorageKey) || "[]");
-  const remainingReports = savedReports.filter((savedReport) => savedReport.name !== report.name);
-  const nextReports = [report, ...remainingReports];
+function mergeReportIntoReports(report, reports) {
+  const remainingReports = reports.filter((savedReport) => savedReport.name !== report.name);
 
+  return [report, ...remainingReports];
+}
+
+function saveToLocalReports(nextReports) {
   localStorage.setItem(reportsStorageKey, JSON.stringify(nextReports));
   localStorage.setItem(selectedChildStorageKey, "0");
+}
 
-  return nextReports;
+async function loadCloudReports() {
+  if (!currentUser) {
+    cloudReports = [];
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("kid_daily_user_data")
+    .select("reports")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (error) {
+    setUploadStatus(`云端读取失败：${error.message}`);
+    cloudReports = JSON.parse(localStorage.getItem(reportsStorageKey) || "[]");
+    return;
+  }
+
+  cloudReports = Array.isArray(data?.reports)
+    ? data.reports
+    : JSON.parse(localStorage.getItem(reportsStorageKey) || "[]");
+
+  localStorage.setItem(reportsStorageKey, JSON.stringify(cloudReports));
 }
 
 async function findOrCreateChild(report) {
@@ -327,12 +353,14 @@ async function uploadMobileReport() {
   }
 
   const report = buildReportFromRows(rows);
-  const nextReports = saveToLocalReports(report);
+  const nextReports = mergeReportIntoReports(report, cloudReports);
+  saveToLocalReports(nextReports);
 
   setUploadStatus("正在上传到云端...");
 
   try {
     await saveReportToCloud(report, nextReports);
+    cloudReports = nextReports;
     setUploadStatus(`上传成功：${report.name} 今天总使用 ${formatMinutes(report.totalMinutes)}，成长评分 ${report.growthScore} 分。`);
   } catch (error) {
     setUploadStatus(`上传失败：${error.message}`);
@@ -365,10 +393,12 @@ function setAuthView(user) {
     authUser.style.display = "grid";
     setText("child-auth-email-text", user.email);
     setAuthMessage("已登录，可以上传孩子端数据。");
+    loadCloudReports();
     return;
   }
 
   uploadCard.classList.add("locked");
+  cloudReports = [];
   authForm.style.display = "grid";
   authUser.style.display = "none";
   setText("child-auth-email-text", "");
