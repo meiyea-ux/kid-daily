@@ -1187,7 +1187,7 @@ a {
 .child-app-page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px 18px 48px;
+  padding: 24px 18px 116px;
   box-sizing: border-box;
 }
 
@@ -1339,6 +1339,48 @@ a {
   font-size: 20px;
 }
 
+.mobile-tab-bar {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 20;
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 10px;
+  border: 1px solid rgba(219, 234, 254, 0.92);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(16px);
+}
+
+.mobile-tab-bar a {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  padding: 10px 8px;
+  border-radius: 18px;
+  color: #64748b;
+  font-weight: 900;
+}
+
+.mobile-tab-bar a.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.mobile-tab-bar strong {
+  font-size: 15px;
+}
+
+.mobile-tab-bar span {
+  font-size: 11px;
+}
+
 @media (max-width: 720px) {
   .home-page {
     padding: 28px 16px;
@@ -1441,7 +1483,7 @@ a {
   }
 
   .child-app-page {
-    padding: 22px 14px 36px;
+    padding: 22px 14px 112px;
   }
 
   .child-hero {
@@ -1476,6 +1518,10 @@ a {
   .child-actions .primary-button,
   .child-actions .secondary-button {
     width: 100%;
+  }
+
+  .mobile-tab-bar {
+    display: grid;
   }
 
 }
