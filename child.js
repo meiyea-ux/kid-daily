@@ -1,5 +1,6 @@
 const reportsStorageKey = "kidDailyDigitalReportsV2";
 const selectedChildStorageKey = "kidDailyDigitalSelectedChildV2";
+const selectedMobileChildStorageKey = "kidDailyMobileSelectedChildNameV1";
 const supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co";
 const supabasePublishableKey = "sb_publishable_ZpSnxUTDfmVnu0MMGbcjOw_b_icH-Jl";
 const supabaseClient = window.supabase
@@ -8,6 +9,7 @@ const supabaseClient = window.supabase
 
 let currentUser = null;
 let cloudReports = [];
+let cloudChildren = [];
 
 function setText(id, text) {
   const element = document.getElementById(id);
@@ -177,7 +179,7 @@ function buildReportFromRows(rows) {
     });
 
   const report = {
-    name: document.getElementById("child-name").value.trim() || "孩子",
+    name: getSelectedChildName(),
     date: new Date().toISOString().slice(0, 10),
     totalMinutes,
     learningMinutes: totals.learning,
@@ -196,6 +198,57 @@ function buildReportFromRows(rows) {
   report.aiComment = buildAiComment(report);
 
   return report;
+}
+
+function getSelectedChildName() {
+  const selector = document.getElementById("child-selector");
+
+  return selector?.value || "孩子";
+}
+
+function getRememberedChildName() {
+  return localStorage.getItem(selectedMobileChildStorageKey) || "";
+}
+
+function rememberSelectedChild() {
+  const childName = getSelectedChildName();
+
+  if (childName) {
+    localStorage.setItem(selectedMobileChildStorageKey, childName);
+    setText("child-selector-helper", `已记住：${childName}。下次打开会自动选择。`);
+  }
+}
+
+function renderChildSelector() {
+  const selector = document.getElementById("child-selector");
+
+  if (!selector) {
+    return;
+  }
+
+  const rememberedName = getRememberedChildName();
+  const names = [
+    ...cloudChildren.map((child) => child.name),
+    ...cloudReports.map((report) => report.name)
+  ].filter(Boolean);
+  const uniqueNames = [...new Set(names)];
+  const options = uniqueNames.length > 0 ? uniqueNames : ["Lucy"];
+
+  selector.innerHTML = "";
+
+  options.forEach((name) => {
+    const option = document.createElement("option");
+
+    option.value = name;
+    option.textContent = name;
+    selector.appendChild(option);
+  });
+
+  if (rememberedName && options.includes(rememberedName)) {
+    selector.value = rememberedName;
+  }
+
+  rememberSelectedChild();
 }
 
 function mergeReportIntoReports(report, reports) {
@@ -232,6 +285,29 @@ async function loadCloudReports() {
     : JSON.parse(localStorage.getItem(reportsStorageKey) || "[]");
 
   localStorage.setItem(reportsStorageKey, JSON.stringify(cloudReports));
+  renderChildSelector();
+}
+
+async function loadCloudChildren() {
+  if (!currentUser) {
+    cloudChildren = [];
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("children")
+    .select("id, name")
+    .eq("parent_user_id", currentUser.id)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    setUploadStatus(`孩子列表读取失败：${error.message}`);
+    cloudChildren = [];
+    return;
+  }
+
+  cloudChildren = data || [];
+  renderChildSelector();
 }
 
 async function findOrCreateChild(report) {
@@ -407,12 +483,14 @@ function setAuthView(user) {
     authUser.style.display = "grid";
     setText("child-auth-email-text", user.email);
     setAuthMessage("已登录，可以上传孩子端数据。");
+    loadCloudChildren();
     loadCloudReports();
     return;
   }
 
   uploadCard.classList.add("locked");
   cloudReports = [];
+  cloudChildren = [];
   authForm.style.display = "grid";
   authUser.style.display = "none";
   setText("child-auth-email-text", "");
@@ -467,7 +545,9 @@ async function initAuth() {
 
 document.getElementById("child-sign-in-button").addEventListener("click", signIn);
 document.getElementById("child-sign-out-button").addEventListener("click", signOut);
+document.getElementById("child-selector").addEventListener("change", rememberSelectedChild);
 document.getElementById("add-mobile-app-button").addEventListener("click", addMobileAppRow);
 document.getElementById("upload-mobile-report-button").addEventListener("click", uploadMobileReport);
 
+renderChildSelector();
 initAuth();

@@ -1278,6 +1278,13 @@ a {
   margin-top: 12px;
 }
 
+.child-helper-text {
+  margin: 8px 0 16px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .mobile-app-row {
   display: grid;
   grid-template-columns: 1.4fr 0.7fr 0.9fr;
