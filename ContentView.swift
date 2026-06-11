@@ -80,6 +80,7 @@ final class ScreenTimeManager: ObservableObject {
 
     func requestAuthorization() async {
         #if canImport(FamilyControls)
+        statusMessage = "Requesting Screen Time permission..."
         do {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
             refreshAuthorizationState()
@@ -795,6 +796,7 @@ struct ContentView: View {
 
             #if canImport(FamilyControls)
             Button {
+                screenTimeManager.statusMessage = "Opening app and category picker..."
                 isActivityPickerPresented = true
             } label: {
                 Label("Select Apps and Categories", systemImage: "app.badge")
