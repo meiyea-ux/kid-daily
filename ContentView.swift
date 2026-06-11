@@ -126,6 +126,12 @@ struct ContentView: View {
     @AppStorage("readingCompleted") private var readingCompleted = false
     @AppStorage("lastSavedDateKey") private var lastSavedDateKey = ""
     @AppStorage("dailyRecordsData") private var dailyRecordsData = ""
+    @AppStorage("parentPIN") private var parentPIN = "1234"
+
+    @State private var parentPINInput = ""
+    @State private var newParentPIN = ""
+    @State private var isParentUnlocked = false
+    @State private var parentPINError = ""
 
     private let totalTaskCount = 3
     private let gameMinutesPerTask = 10
@@ -191,7 +197,11 @@ struct ContentView: View {
 
             NavigationStack {
                 appBackground {
-                    parentView
+                    if isParentUnlocked {
+                        parentView
+                    } else {
+                        parentLockView
+                    }
                 }
                 .navigationTitle("Parent")
             }
@@ -258,9 +268,20 @@ struct ContentView: View {
 
     private var parentView: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Parent Dashboard")
-                .font(.largeTitle)
-                .bold()
+            HStack {
+                Text("Parent Dashboard")
+                    .font(.largeTitle)
+                    .bold()
+
+                Spacer()
+
+                Button("Lock") {
+                    isParentUnlocked = false
+                    parentPINInput = ""
+                    parentPINError = ""
+                }
+                .buttonStyle(.bordered)
+            }
 
             Text("Review learning consistency and prepare future screen time controls.")
                 .foregroundStyle(.secondary)
@@ -284,7 +305,48 @@ struct ContentView: View {
             }
 
             parentControlCard
+            parentPINCard
             parentNotesCard
+
+            Spacer(minLength: 20)
+        }
+        .padding()
+    }
+
+    private var parentLockView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(.blue)
+
+            Text("Parent Area Locked")
+                .font(.largeTitle)
+                .bold()
+
+            Text("Enter the parent PIN to view records and settings.")
+                .foregroundStyle(.secondary)
+
+            SecureField("Parent PIN", text: $parentPINInput)
+                .keyboardType(.numberPad)
+                .textFieldStyle(.roundedBorder)
+
+            if !parentPINError.isEmpty {
+                Text(parentPINError)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+
+            Button {
+                unlockParentArea()
+            } label: {
+                Label("Unlock Parent Area", systemImage: "lock.open.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+
+            Text("Default PIN: 1234")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
 
             Spacer(minLength: 20)
         }
@@ -417,6 +479,35 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
+    private var parentPINCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "key.fill")
+                    .foregroundStyle(.orange)
+
+                Text("Parent PIN")
+                    .font(.headline)
+            }
+
+            Text("Change the PIN used to open the Parent tab.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            SecureField("New 4-digit PIN", text: $newParentPIN)
+                .keyboardType(.numberPad)
+                .textFieldStyle(.roundedBorder)
+
+            Button("Save New PIN") {
+                saveNewParentPIN()
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
     private var parentNotesCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Parent Notes")
@@ -496,6 +587,24 @@ struct ContentView: View {
     private func updateTodayProgress() {
         saveTodayRecord()
         screenTimeManager.applyGameTimeLimit(minutes: gameTimeMinutes)
+    }
+
+    private func unlockParentArea() {
+        if parentPINInput == parentPIN {
+            isParentUnlocked = true
+            parentPINInput = ""
+            parentPINError = ""
+        } else {
+            parentPINError = "Incorrect PIN. Try again."
+        }
+    }
+
+    private func saveNewParentPIN() {
+        let trimmedPIN = newParentPIN.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedPIN.count >= 4 else { return }
+
+        parentPIN = trimmedPIN
+        newParentPIN = ""
     }
 
     private func saveTodayRecord() {

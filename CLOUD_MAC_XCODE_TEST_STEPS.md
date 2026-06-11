@@ -69,3 +69,6 @@ Then replace `iPhone 15` with one of the listed simulator names.
   - `Records`: daily records and continuous learning streak.
   - `Parent`: parent dashboard and future Screen Time API entry point.
 - Continuous learning streak counts consecutive days where all three tasks were completed.
+- Parent tab is now protected by a simple PIN lock.
+- Default parent PIN is `1234`.
+- Parent dashboard can change the PIN and lock itself again.
