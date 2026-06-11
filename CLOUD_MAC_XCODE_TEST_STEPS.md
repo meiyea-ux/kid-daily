@@ -77,3 +77,7 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - The unlocked game time message updates automatically from the reward rule.
 - Today tab now shows encouragement feedback as tasks are completed.
 - Completed task rows get a clearer green success state.
+- Parent dashboard can set the child's name.
+- Parent dashboard can edit notes shown under each learning task.
+- Records rows now open a detail page for that day's task completion.
+- Parent dashboard includes a Screen Time setup checklist.

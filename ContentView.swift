@@ -25,6 +25,7 @@ struct ScreenTimeManager {
 struct LearningTaskRow: View {
     let title: String
     let minutes: Int
+    let note: String
     let color: Color
     @Binding var isCompleted: Bool
 
@@ -48,6 +49,12 @@ struct LearningTaskRow: View {
                     Text("\(minutes) minutes")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+
+                    if !note.isEmpty {
+                        Text(note)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -192,6 +199,84 @@ struct RecordRow: View {
     }
 }
 
+struct RecordDetailView: View {
+    let record: DailyRecord
+
+    var body: some View {
+        List {
+            Section("Summary") {
+                HStack {
+                    Text("Date")
+                    Spacer()
+                    Text(record.dateKey)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text("Completed")
+                    Spacer()
+                    Text("\(record.completedCount) / 3")
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text("Game Time")
+                    Spacer()
+                    Text("\(record.gameTimeMinutes) min")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("Tasks") {
+                detailTaskRow(title: "Math", isCompleted: record.mathCompleted)
+                detailTaskRow(title: "English", isCompleted: record.englishCompleted)
+                detailTaskRow(title: "Reading", isCompleted: record.readingCompleted)
+            }
+        }
+        .navigationTitle("Record Detail")
+    }
+
+    private func detailTaskRow(title: String, isCompleted: Bool) -> some View {
+        HStack {
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(isCompleted ? .green : .secondary)
+
+            Text(title)
+
+            Spacer()
+
+            Text(isCompleted ? "Done" : "Not Done")
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct ScreenTimeSetupStep: View {
+    let number: Int
+    let title: String
+    let description: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(number)")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Color.blue)
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.headline)
+
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
 struct ContentView: View {
     @AppStorage("mathCompleted") private var mathCompleted = false
     @AppStorage("englishCompleted") private var englishCompleted = false
@@ -203,6 +288,10 @@ struct ContentView: View {
     @AppStorage("englishMinutes") private var englishMinutes = 20
     @AppStorage("readingMinutes") private var readingMinutes = 15
     @AppStorage("gameMinutesPerTask") private var gameMinutesPerTask = 10
+    @AppStorage("childName") private var childName = "Kid"
+    @AppStorage("mathNote") private var mathNote = "Practice number skills"
+    @AppStorage("englishNote") private var englishNote = "Learn words and sentences"
+    @AppStorage("readingNote") private var readingNote = "Read a story or book"
 
     @State private var parentPINInput = ""
     @State private var newParentPIN = ""
@@ -339,7 +428,12 @@ struct ContentView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(dailyRecords) { record in
-                        RecordRow(record: record)
+                        NavigationLink {
+                            RecordDetailView(record: record)
+                        } label: {
+                            RecordRow(record: record)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -386,6 +480,8 @@ struct ContentView: View {
             }
 
             parentControlCard
+            screenTimeSetupCard
+            childProfileCard
             parentTaskSettingsCard
             parentRewardSettingsCard
             parentPINCard
@@ -442,7 +538,7 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .bold()
 
-            Text("Finish learning tasks to earn game time.")
+            Text("Good job, \(childName). Finish learning tasks to earn game time.")
                 .font(.body)
                 .foregroundStyle(.secondary)
         }
@@ -511,6 +607,7 @@ struct ContentView: View {
             LearningTaskRow(
                 title: "Math",
                 minutes: mathMinutes,
+                note: mathNote,
                 color: .blue,
                 isCompleted: $mathCompleted
             )
@@ -518,6 +615,7 @@ struct ContentView: View {
             LearningTaskRow(
                 title: "English",
                 minutes: englishMinutes,
+                note: englishNote,
                 color: .purple,
                 isCompleted: $englishCompleted
             )
@@ -525,6 +623,7 @@ struct ContentView: View {
             LearningTaskRow(
                 title: "Reading",
                 minutes: readingMinutes,
+                note: readingNote,
                 color: .orange,
                 isCompleted: $readingCompleted
             )
@@ -571,6 +670,73 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
+    private var screenTimeSetupCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "iphone.and.arrow.forward")
+                    .foregroundStyle(.blue)
+
+                Text("Setup Screen Time")
+                    .font(.headline)
+            }
+
+            Text("Preparation checklist for the future Apple Screen Time integration.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            ScreenTimeSetupStep(
+                number: 1,
+                title: "Request Permission",
+                description: "Ask the parent to approve FamilyControls access."
+            )
+
+            ScreenTimeSetupStep(
+                number: 2,
+                title: "Select Apps",
+                description: "Choose which games or apps are managed by KidDaily."
+            )
+
+            ScreenTimeSetupStep(
+                number: 3,
+                title: "Apply Limit",
+                description: "Use earned game time to apply a daily screen time limit."
+            )
+
+            ScreenTimeSetupStep(
+                number: 4,
+                title: "Monitor Usage",
+                description: "Read activity reports and update the parent dashboard."
+            )
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var childProfileCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "person.crop.circle.fill")
+                    .foregroundStyle(.green)
+
+                Text("Child Profile")
+                    .font(.headline)
+            }
+
+            Text("Set the child's name for the Today screen.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            TextField("Child name", text: $childName)
+                .textFieldStyle(.roundedBorder)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
     private var parentTaskSettingsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -588,6 +754,15 @@ struct ContentView: View {
             Stepper("Math: \(mathMinutes) min", value: $mathMinutes, in: 5...120, step: 5)
             Stepper("English: \(englishMinutes) min", value: $englishMinutes, in: 5...120, step: 5)
             Stepper("Reading: \(readingMinutes) min", value: $readingMinutes, in: 5...120, step: 5)
+
+            TextField("Math note", text: $mathNote)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("English note", text: $englishNote)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("Reading note", text: $readingNote)
+                .textFieldStyle(.roundedBorder)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
