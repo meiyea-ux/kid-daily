@@ -81,3 +81,8 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - Parent dashboard can edit notes shown under each learning task.
 - Records rows now open a detail page for that day's task completion.
 - Parent dashboard includes a Screen Time setup checklist.
+- Parent dashboard now calls Apple's Screen Time APIs when available:
+  - `AuthorizationCenter` requests Screen Time permission.
+  - `FamilyActivityPicker` opens system app/category selection.
+  - `ManagedSettingsStore` applies or clears shields for selected apps/categories/domains.
+- Detailed usage reports still require adding a separate Device Activity Report extension target.

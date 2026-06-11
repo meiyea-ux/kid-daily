@@ -1,5 +1,13 @@
 import SwiftUI
 
+#if canImport(FamilyControls)
+import FamilyControls
+#endif
+
+#if canImport(ManagedSettings)
+import ManagedSettings
+#endif
+
 struct DailyRecord: Identifiable, Codable {
     var id: String { dateKey }
     let dateKey: String
@@ -14,11 +22,107 @@ struct DailyRecord: Identifiable, Codable {
     }
 }
 
-struct ScreenTimeManager {
+enum ScreenTimeAuthorizationState: String {
+    case unavailable = "Unavailable"
+    case notDetermined = "Not Determined"
+    case denied = "Denied"
+    case approved = "Approved"
+
+    var color: Color {
+        switch self {
+        case .approved:
+            return .green
+        case .denied:
+            return .red
+        case .notDetermined:
+            return .orange
+        case .unavailable:
+            return .secondary
+        }
+    }
+}
+
+@MainActor
+final class ScreenTimeManager: ObservableObject {
+    @Published var authorizationState: ScreenTimeAuthorizationState = .unavailable
+    @Published var statusMessage = "Screen Time frameworks are not available in this build."
+
+    #if canImport(ManagedSettings)
+    private let store = ManagedSettingsStore()
+    #endif
+
+    init() {
+        refreshAuthorizationState()
+    }
+
+    func refreshAuthorizationState() {
+        #if canImport(FamilyControls)
+        switch AuthorizationCenter.shared.authorizationStatus {
+        case .notDetermined:
+            authorizationState = .notDetermined
+            statusMessage = "Screen Time permission has not been requested yet."
+        case .denied:
+            authorizationState = .denied
+            statusMessage = "Screen Time permission was denied."
+        case .approved:
+            authorizationState = .approved
+            statusMessage = "Screen Time permission is approved."
+        @unknown default:
+            authorizationState = .unavailable
+            statusMessage = "Unknown Screen Time authorization status."
+        }
+        #else
+        authorizationState = .unavailable
+        statusMessage = "FamilyControls is unavailable in this build."
+        #endif
+    }
+
+    func requestAuthorization() async {
+        #if canImport(FamilyControls)
+        do {
+            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+            refreshAuthorizationState()
+        } catch {
+            authorizationState = .denied
+            statusMessage = "Authorization failed: \(error.localizedDescription)"
+        }
+        #else
+        authorizationState = .unavailable
+        statusMessage = "FamilyControls is unavailable in this build."
+        #endif
+    }
+
+    #if canImport(FamilyControls) && canImport(ManagedSettings)
+    func applyGameTimeLimit(minutes: Int, selection: FamilyActivitySelection) {
+        guard authorizationState == .approved else {
+            statusMessage = "Approve Screen Time access before applying limits."
+            return
+        }
+
+        guard minutes > 0 else {
+            clearRestrictions()
+            statusMessage = "No earned game time yet. Selected apps are not shielded."
+            return
+        }
+
+        store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
+        store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
+        store.shield.webDomains = selection.webDomainTokens.isEmpty ? nil : selection.webDomainTokens
+        statusMessage = "Screen Time shield updated for selected apps and categories."
+    }
+    #else
     func applyGameTimeLimit(minutes: Int) {
-        // Future integration point:
-        // Add FamilyControls, ManagedSettings, and DeviceActivity here when
-        // the app is ready to request Apple's Screen Time permissions.
+        statusMessage = "Screen Time frameworks are unavailable in this build."
+    }
+    #endif
+
+    func clearRestrictions() {
+        #if canImport(ManagedSettings)
+        store.clearAllSettings()
+        statusMessage = "Screen Time restrictions cleared."
+        #else
+        statusMessage = "ManagedSettings is unavailable in this build."
+        #endif
     }
 }
 
@@ -278,6 +382,8 @@ struct ScreenTimeSetupStep: View {
 }
 
 struct ContentView: View {
+    @StateObject private var screenTimeManager = ScreenTimeManager()
+
     @AppStorage("mathCompleted") private var mathCompleted = false
     @AppStorage("englishCompleted") private var englishCompleted = false
     @AppStorage("readingCompleted") private var readingCompleted = false
@@ -299,7 +405,11 @@ struct ContentView: View {
     @State private var parentPINError = ""
 
     private let totalTaskCount = 3
-    private let screenTimeManager = ScreenTimeManager()
+
+    #if canImport(FamilyControls)
+    @State private var activitySelection = FamilyActivitySelection()
+    @State private var isActivityPickerPresented = false
+    #endif
 
     private var completedCount: Int {
         [mathCompleted, englishCompleted, readingCompleted].filter { $0 }.count
@@ -380,11 +490,15 @@ struct ContentView: View {
         .onAppear {
             prepareToday()
             saveTodayRecord()
+            screenTimeManager.refreshAuthorizationState()
         }
         .onChange(of: mathCompleted) { _ in updateTodayProgress() }
         .onChange(of: englishCompleted) { _ in updateTodayProgress() }
         .onChange(of: readingCompleted) { _ in updateTodayProgress() }
         .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
+        #if canImport(FamilyControls)
+        .familyActivityPicker(isPresented: $isActivityPickerPresented, selection: $activitySelection)
+        #endif
     }
 
     private var todayView: some View {
@@ -657,12 +771,56 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("Prepared for future integration with Apple's FamilyControls, ManagedSettings, and DeviceActivity frameworks.")
+            Text("Authorization: \(screenTimeManager.authorizationState.rawValue)")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(screenTimeManager.authorizationState.color)
 
             Text("Current earned limit: \(gameTimeMinutes) min")
                 .font(.headline)
+
+            Text(screenTimeManager.statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Button {
+                Task {
+                    await screenTimeManager.requestAuthorization()
+                }
+            } label: {
+                Label("Request Screen Time Permission", systemImage: "person.badge.key.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+
+            #if canImport(FamilyControls)
+            Button {
+                isActivityPickerPresented = true
+            } label: {
+                Label("Select Apps and Categories", systemImage: "app.badge")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            #else
+            Text("FamilyActivityPicker is unavailable in this build.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            #endif
+
+            Button {
+                applyScreenTimeLimit()
+            } label: {
+                Label("Apply Earned Limit", systemImage: "checkmark.shield.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+
+            Button(role: .destructive) {
+                screenTimeManager.clearRestrictions()
+            } label: {
+                Label("Clear Screen Time Restrictions", systemImage: "xmark.shield.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -908,7 +1066,15 @@ struct ContentView: View {
 
     private func updateTodayProgress() {
         saveTodayRecord()
+        applyScreenTimeLimit()
+    }
+
+    private func applyScreenTimeLimit() {
+        #if canImport(FamilyControls) && canImport(ManagedSettings)
+        screenTimeManager.applyGameTimeLimit(minutes: gameTimeMinutes, selection: activitySelection)
+        #else
         screenTimeManager.applyGameTimeLimit(minutes: gameTimeMinutes)
+        #endif
     }
 
     private func unlockParentArea() {
