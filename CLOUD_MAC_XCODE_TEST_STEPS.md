@@ -64,3 +64,8 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - Daily records are saved locally and shown in `Recent Records`.
 - The app resets task toggles when a new calendar day starts.
 - `ScreenTimeManager` is a placeholder for future Apple Screen Time API integration.
+- The app now has three tabs:
+  - `Today`: child learning tasks and earned game time.
+  - `Records`: daily records and continuous learning streak.
+  - `Parent`: parent dashboard and future Screen Time API entry point.
+- Continuous learning streak counts consecutive days where all three tasks were completed.

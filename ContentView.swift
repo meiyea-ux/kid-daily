@@ -8,6 +8,10 @@ struct DailyRecord: Identifiable, Codable {
     var readingCompleted: Bool
     var completedCount: Int
     var gameTimeMinutes: Int
+
+    var isFullyCompleted: Bool {
+        completedCount == 3
+    }
 }
 
 struct ScreenTimeManager {
@@ -48,9 +52,71 @@ struct LearningTaskRow: View {
             }
         }
         .padding()
-        .background(Color.white.opacity(0.92))
+        .background(Color.white.opacity(0.94))
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .shadow(color: .black.opacity(0.06), radius: 10, y: 5)
+    }
+}
+
+struct StatCard: View {
+    let title: String
+    let value: String
+    let subtitle: String
+    let color: Color
+    let iconName: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: iconName)
+                    .foregroundStyle(color)
+
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(value)
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+
+            Text(subtitle)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.92))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+    }
+}
+
+struct RecordRow: View {
+    let record: DailyRecord
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: record.isFullyCompleted ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(record.isFullyCompleted ? .green : .secondary)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(record.dateKey)
+                    .font(.headline)
+
+                Text("\(record.completedCount) / 3 tasks completed")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Text("\(record.gameTimeMinutes) min")
+                .font(.headline)
+        }
+        .padding()
+        .background(Color.white.opacity(0.92))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -85,41 +151,144 @@ struct ContentView: View {
         decodeRecords()
     }
 
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color.blue.opacity(0.18),
-                        Color.green.opacity(0.12),
-                        Color.white
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+    private var currentStreak: Int {
+        streakCount(from: dailyRecords)
+    }
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        headerView
-                        gameSummaryView
-                        taskListView
-                        progressView
-                        historyView
-                        resetButton
+    private var lastSevenRecords: [DailyRecord] {
+        Array(dailyRecords.prefix(7))
+    }
+
+    private var lastSevenGameMinutes: Int {
+        lastSevenRecords.reduce(0) { $0 + $1.gameTimeMinutes }
+    }
+
+    private var lastSevenCompletedDays: Int {
+        lastSevenRecords.filter { $0.isFullyCompleted }.count
+    }
+
+    var body: some View {
+        TabView {
+            NavigationStack {
+                appBackground {
+                    todayView
+                }
+                .navigationTitle("KidDaily")
+            }
+            .tabItem {
+                Label("Today", systemImage: "house.fill")
+            }
+
+            NavigationStack {
+                appBackground {
+                    recordsView
+                }
+                .navigationTitle("Daily Records")
+            }
+            .tabItem {
+                Label("Records", systemImage: "calendar")
+            }
+
+            NavigationStack {
+                appBackground {
+                    parentView
+                }
+                .navigationTitle("Parent")
+            }
+            .tabItem {
+                Label("Parent", systemImage: "person.2.fill")
+            }
+        }
+        .onAppear {
+            prepareToday()
+            saveTodayRecord()
+        }
+        .onChange(of: mathCompleted) { _ in updateTodayProgress() }
+        .onChange(of: englishCompleted) { _ in updateTodayProgress() }
+        .onChange(of: readingCompleted) { _ in updateTodayProgress() }
+    }
+
+    private var todayView: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            headerView
+            streakCard
+            gameSummaryView
+            taskListView
+            progressView
+            resetButton
+        }
+        .padding()
+    }
+
+    private var recordsView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                StatCard(
+                    title: "Current Streak",
+                    value: "\(currentStreak)",
+                    subtitle: "days",
+                    color: .orange,
+                    iconName: "flame.fill"
+                )
+
+                StatCard(
+                    title: "Last 7 Days",
+                    value: "\(lastSevenCompletedDays)",
+                    subtitle: "perfect days",
+                    color: .green,
+                    iconName: "checkmark.circle.fill"
+                )
+            }
+
+            Text("History")
+                .font(.headline)
+
+            if dailyRecords.isEmpty {
+                emptyRecordsView
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(dailyRecords) { record in
+                        RecordRow(record: record)
                     }
-                    .padding()
                 }
             }
-            .navigationTitle("KidDaily")
-            .onAppear {
-                prepareToday()
-                saveTodayRecord()
-            }
-            .onChange(of: mathCompleted) { _ in updateTodayProgress() }
-            .onChange(of: englishCompleted) { _ in updateTodayProgress() }
-            .onChange(of: readingCompleted) { _ in updateTodayProgress() }
         }
+        .padding()
+    }
+
+    private var parentView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Parent Dashboard")
+                .font(.largeTitle)
+                .bold()
+
+            Text("Review learning consistency and prepare future screen time controls.")
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                StatCard(
+                    title: "Streak",
+                    value: "\(currentStreak)",
+                    subtitle: "days",
+                    color: .orange,
+                    iconName: "flame.fill"
+                )
+
+                StatCard(
+                    title: "Game Time",
+                    value: "\(lastSevenGameMinutes)",
+                    subtitle: "min in 7 days",
+                    color: .blue,
+                    iconName: "gamecontroller.fill"
+                )
+            }
+
+            parentControlCard
+            parentNotesCard
+
+            Spacer(minLength: 20)
+        }
+        .padding()
     }
 
     private var headerView: some View {
@@ -132,6 +301,28 @@ struct ContentView: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var streakCard: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "flame.fill")
+                .font(.title)
+                .foregroundStyle(.orange)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Continuous Learning")
+                    .font(.headline)
+
+                Text("\(currentStreak) day streak")
+                    .font(.title3)
+                    .bold()
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(Color.orange.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var gameSummaryView: some View {
@@ -203,40 +394,60 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var historyView: some View {
+    private var parentControlCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Records")
-                .font(.headline)
+            HStack {
+                Image(systemName: "lock.shield")
+                    .foregroundStyle(.blue)
 
-            if dailyRecords.isEmpty {
-                Text("No records yet.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(dailyRecords.prefix(7)) { record in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(record.dateKey)
-                                .font(.subheadline)
-                                .bold()
-
-                            Text("\(record.completedCount) tasks completed")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-
-                        Text("\(record.gameTimeMinutes) min")
-                            .font(.subheadline)
-                            .bold()
-                    }
-                    .padding(.vertical, 4)
-                }
+                Text("Screen Time API")
+                    .font(.headline)
             }
+
+            Text("Prepared for future integration with Apple's FamilyControls, ManagedSettings, and DeviceActivity frameworks.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text("Current earned limit: \(gameTimeMinutes) min")
+                .font(.headline)
         }
         .padding()
-        .background(Color.white.opacity(0.8))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var parentNotesCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Parent Notes")
+                .font(.headline)
+
+            Text("Use this page later for parent passcode, app selection, daily limits, and approval history.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var emptyRecordsView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: "calendar")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+
+            Text("No daily records yet.")
+                .font(.headline)
+
+            Text("Complete or reset today's tasks to create a record.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.85))
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
@@ -252,6 +463,25 @@ struct ContentView: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(.blue)
+    }
+
+    private func appBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.blue.opacity(0.18),
+                    Color.green.opacity(0.12),
+                    Color.white
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            ScrollView {
+                content()
+            }
+        }
     }
 
     private func prepareToday() {
@@ -298,6 +528,28 @@ struct ContentView: View {
         }
 
         return records.sorted { $0.dateKey > $1.dateKey }
+    }
+
+    private func streakCount(from records: [DailyRecord]) -> Int {
+        var streak = 0
+        var date = Calendar.current.startOfDay(for: Date())
+
+        while true {
+            let key = Self.dayFormatter.string(from: date)
+            guard records.first(where: { $0.dateKey == key })?.isFullyCompleted == true else {
+                break
+            }
+
+            streak += 1
+
+            guard let previousDate = Calendar.current.date(byAdding: .day, value: -1, to: date) else {
+                break
+            }
+
+            date = previousDate
+        }
+
+        return streak
     }
 
     private static let dayFormatter: DateFormatter = {
