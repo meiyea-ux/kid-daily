@@ -127,6 +127,10 @@ struct ContentView: View {
     @AppStorage("lastSavedDateKey") private var lastSavedDateKey = ""
     @AppStorage("dailyRecordsData") private var dailyRecordsData = ""
     @AppStorage("parentPIN") private var parentPIN = "1234"
+    @AppStorage("mathMinutes") private var mathMinutes = 20
+    @AppStorage("englishMinutes") private var englishMinutes = 20
+    @AppStorage("readingMinutes") private var readingMinutes = 15
+    @AppStorage("gameMinutesPerTask") private var gameMinutesPerTask = 10
 
     @State private var parentPINInput = ""
     @State private var newParentPIN = ""
@@ -134,7 +138,6 @@ struct ContentView: View {
     @State private var parentPINError = ""
 
     private let totalTaskCount = 3
-    private let gameMinutesPerTask = 10
     private let screenTimeManager = ScreenTimeManager()
 
     private var completedCount: Int {
@@ -143,6 +146,10 @@ struct ContentView: View {
 
     private var gameTimeMinutes: Int {
         completedCount * gameMinutesPerTask
+    }
+
+    private var maxGameTimeMinutes: Int {
+        totalTaskCount * gameMinutesPerTask
     }
 
     private var allTasksCompleted: Bool {
@@ -216,6 +223,7 @@ struct ContentView: View {
         .onChange(of: mathCompleted) { _ in updateTodayProgress() }
         .onChange(of: englishCompleted) { _ in updateTodayProgress() }
         .onChange(of: readingCompleted) { _ in updateTodayProgress() }
+        .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
     }
 
     private var todayView: some View {
@@ -305,6 +313,8 @@ struct ContentView: View {
             }
 
             parentControlCard
+            parentTaskSettingsCard
+            parentRewardSettingsCard
             parentPINCard
             parentNotesCard
 
@@ -389,7 +399,7 @@ struct ContentView: View {
 
     private var gameSummaryView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(allTasksCompleted ? "Game Time Unlocked: 30 min" : "Game Time Locked")
+            Text(allTasksCompleted ? "Game Time Unlocked: \(maxGameTimeMinutes) min" : "Game Time Locked")
                 .font(.title2)
                 .bold()
                 .foregroundStyle(allTasksCompleted ? .green : .red)
@@ -418,21 +428,21 @@ struct ContentView: View {
         VStack(spacing: 12) {
             LearningTaskRow(
                 title: "Math",
-                minutes: 20,
+                minutes: mathMinutes,
                 color: .blue,
                 isCompleted: $mathCompleted
             )
 
             LearningTaskRow(
                 title: "English",
-                minutes: 20,
+                minutes: englishMinutes,
                 color: .purple,
                 isCompleted: $englishCompleted
             )
 
             LearningTaskRow(
                 title: "Reading",
-                minutes: 15,
+                minutes: readingMinutes,
                 color: .orange,
                 isCompleted: $readingCompleted
             )
@@ -472,6 +482,61 @@ struct ContentView: View {
 
             Text("Current earned limit: \(gameTimeMinutes) min")
                 .font(.headline)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var parentTaskSettingsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "slider.horizontal.3")
+                    .foregroundStyle(.purple)
+
+                Text("Learning Tasks")
+                    .font(.headline)
+            }
+
+            Text("Adjust the expected learning time for each daily task.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Stepper("Math: \(mathMinutes) min", value: $mathMinutes, in: 5...120, step: 5)
+            Stepper("English: \(englishMinutes) min", value: $englishMinutes, in: 5...120, step: 5)
+            Stepper("Reading: \(readingMinutes) min", value: $readingMinutes, in: 5...120, step: 5)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var parentRewardSettingsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "gamecontroller.fill")
+                    .foregroundStyle(.blue)
+
+                Text("Reward Rule")
+                    .font(.headline)
+            }
+
+            Text("Set how much game time one completed task earns.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Stepper(
+                "Reward: \(gameMinutesPerTask) min per task",
+                value: $gameMinutesPerTask,
+                in: 5...60,
+                step: 5
+            )
+
+            Text("All three tasks can unlock up to \(maxGameTimeMinutes) minutes.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)

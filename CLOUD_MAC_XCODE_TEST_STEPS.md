@@ -72,3 +72,6 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - Parent tab is now protected by a simple PIN lock.
 - Default parent PIN is `1234`.
 - Parent dashboard can change the PIN and lock itself again.
+- Parent dashboard can adjust Math, English, and Reading task durations.
+- Parent dashboard can adjust the reward rule: game minutes earned per completed task.
+- The unlocked game time message updates automatically from the reward rule.
