@@ -52,9 +52,81 @@ struct LearningTaskRow: View {
             }
         }
         .padding()
-        .background(Color.white.opacity(0.94))
+        .background(isCompleted ? Color.green.opacity(0.16) : Color.white.opacity(0.94))
         .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(isCompleted ? Color.green.opacity(0.45) : Color.clear, lineWidth: 2)
+        }
         .shadow(color: .black.opacity(0.06), radius: 10, y: 5)
+        .animation(.spring(response: 0.28, dampingFraction: 0.8), value: isCompleted)
+    }
+}
+
+struct EncouragementCard: View {
+    let completedCount: Int
+    let totalTaskCount: Int
+    let gameTimeMinutes: Int
+    let maxGameTimeMinutes: Int
+
+    private var iconName: String {
+        completedCount == totalTaskCount ? "party.popper.fill" : "sparkles"
+    }
+
+    private var title: String {
+        switch completedCount {
+        case 0:
+            return "Ready to start?"
+        case 1:
+            return "Nice start!"
+        case 2:
+            return "Almost there!"
+        default:
+            return "Great job!"
+        }
+    }
+
+    private var message: String {
+        switch completedCount {
+        case 0:
+            return "Complete your first task to earn game time."
+        case 1:
+            return "You earned \(gameTimeMinutes) minutes. Keep going."
+        case 2:
+            return "One more task unlocks the full reward."
+        default:
+            return "All tasks are done. You unlocked \(maxGameTimeMinutes) minutes."
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(completedCount == totalTaskCount ? Color.green.opacity(0.18) : Color.yellow.opacity(0.22))
+                    .frame(width: 52, height: 52)
+
+                Image(systemName: iconName)
+                    .font(.title2)
+                    .foregroundStyle(completedCount == totalTaskCount ? .green : .orange)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(completedCount == totalTaskCount ? Color.green.opacity(0.14) : Color.white.opacity(0.86))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: completedCount)
     }
 }
 
@@ -230,6 +302,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 22) {
             headerView
             streakCard
+            encouragementView
             gameSummaryView
             taskListView
             progressView
@@ -422,6 +495,15 @@ struct ContentView: View {
         .background(Color.white.opacity(0.94))
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
+    }
+
+    private var encouragementView: some View {
+        EncouragementCard(
+            completedCount: completedCount,
+            totalTaskCount: totalTaskCount,
+            gameTimeMinutes: gameTimeMinutes,
+            maxGameTimeMinutes: maxGameTimeMinutes
+        )
     }
 
     private var taskListView: some View {

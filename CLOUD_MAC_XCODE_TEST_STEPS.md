@@ -75,3 +75,5 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - Parent dashboard can adjust Math, English, and Reading task durations.
 - Parent dashboard can adjust the reward rule: game minutes earned per completed task.
 - The unlocked game time message updates automatically from the reward rule.
+- Today tab now shows encouragement feedback as tasks are completed.
+- Completed task rows get a clearer green success state.
