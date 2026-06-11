@@ -60,3 +60,7 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - Before all tasks are complete, it shows `Game Time Locked`.
 - After all three are complete, it shows `Game Time Unlocked: 30 min`.
 - `Reset Today` clears all task toggles.
+- Completed tasks automatically earn game time.
+- Daily records are saved locally and shown in `Recent Records`.
+- The app resets task toggles when a new calendar day starts.
+- `ScreenTimeManager` is a placeholder for future Apple Screen Time API integration.
