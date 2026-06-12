@@ -430,7 +430,11 @@ function readRemoteSettingsForm() {
     game_minutes_per_task: Number(document.getElementById("remote-game-minutes").value) || 10,
     math_note: document.getElementById("remote-math-note").value.trim() || "Practice number skills",
     english_note: document.getElementById("remote-english-note").value.trim() || "Learn words and sentences",
-    reading_note: document.getElementById("remote-reading-note").value.trim() || "Read a story or book"
+    reading_note: document.getElementById("remote-reading-note").value.trim() || "Read a story or book",
+    word_level: document.getElementById("remote-word-level").value || "Starter",
+    daily_word_goal: Math.min(10, Math.max(5, Number(document.getElementById("remote-daily-word-goal").value) || 10)),
+    custom_word_list: document.getElementById("remote-custom-word-list").value.trim(),
+    ai_word_prompt: document.getElementById("remote-ai-word-prompt").value.trim()
   };
 }
 
@@ -442,6 +446,10 @@ function fillRemoteSettingsForm(settings) {
   document.getElementById("remote-math-note").value = settings.math_note || "Practice number skills";
   document.getElementById("remote-english-note").value = settings.english_note || "Learn words and sentences";
   document.getElementById("remote-reading-note").value = settings.reading_note || "Read a story or book";
+  document.getElementById("remote-word-level").value = settings.word_level || "Starter";
+  document.getElementById("remote-daily-word-goal").value = settings.daily_word_goal ?? 10;
+  document.getElementById("remote-custom-word-list").value = settings.custom_word_list || "";
+  document.getElementById("remote-ai-word-prompt").value = settings.ai_word_prompt || "";
 }
 
 async function loadRemoteSettingsForSelectedChild() {

@@ -24,11 +24,27 @@ create table if not exists public.child_remote_settings (
   math_note text not null default 'Practice number skills',
   english_note text not null default 'Learn words and sentences',
   reading_note text not null default 'Read a story or book',
+  word_level text not null default 'Starter',
+  daily_word_goal integer not null default 10,
+  custom_word_list text not null default '',
+  ai_word_prompt text not null default '',
   updated_at timestamptz not null default now()
 );
 
 create index if not exists child_remote_settings_parent_idx
 on public.child_remote_settings(parent_user_id);
+
+alter table public.child_remote_settings
+add column if not exists word_level text not null default 'Starter';
+
+alter table public.child_remote_settings
+add column if not exists daily_word_goal integer not null default 10;
+
+alter table public.child_remote_settings
+add column if not exists custom_word_list text not null default '';
+
+alter table public.child_remote_settings
+add column if not exists ai_word_prompt text not null default '';
 
 alter table public.child_pairing_codes enable row level security;
 alter table public.child_remote_settings enable row level security;
@@ -77,6 +93,8 @@ to authenticated
 using (auth.uid() = parent_user_id)
 with check (auth.uid() = parent_user_id);
 
+drop function if exists public.get_kiddaily_settings_by_pairing_code(text);
+
 create or replace function public.get_kiddaily_settings_by_pairing_code(p_pairing_code text)
 returns table (
   math_minutes integer,
@@ -85,7 +103,11 @@ returns table (
   game_minutes_per_task integer,
   math_note text,
   english_note text,
-  reading_note text
+  reading_note text,
+  word_level text,
+  daily_word_goal integer,
+  custom_word_list text,
+  ai_word_prompt text
 )
 language plpgsql
 security definer
@@ -100,7 +122,11 @@ begin
     coalesce(settings.game_minutes_per_task, 10),
     coalesce(settings.math_note, 'Practice number skills'),
     coalesce(settings.english_note, 'Learn words and sentences'),
-    coalesce(settings.reading_note, 'Read a story or book')
+    coalesce(settings.reading_note, 'Read a story or book'),
+    coalesce(settings.word_level, 'Starter'),
+    coalesce(settings.daily_word_goal, 10),
+    coalesce(settings.custom_word_list, ''),
+    coalesce(settings.ai_word_prompt, '')
   from public.child_pairing_codes codes
   left join public.child_remote_settings settings
     on settings.child_id = codes.child_id

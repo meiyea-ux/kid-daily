@@ -158,6 +158,10 @@ final class CloudSyncManager: ObservableObject {
         let math_note: String
         let english_note: String
         let reading_note: String
+        let word_level: String?
+        let daily_word_goal: Int?
+        let custom_word_list: String?
+        let ai_word_prompt: String?
     }
 
     func fetchRemoteSettings(pairingCode: String) async -> RemoteSettings? {
@@ -557,6 +561,11 @@ struct ContentView: View {
     @AppStorage("englishNote") private var englishNote = "Learn words and sentences"
     @AppStorage("readingNote") private var readingNote = "Read a story or book"
     @AppStorage("webPairingCode") private var webPairingCode = ""
+    @AppStorage("wordLevel") private var wordLevel = "Starter"
+    @AppStorage("dailyWordGoal") private var dailyWordGoal = 10
+    @AppStorage("customWordList") private var customWordList = ""
+    @AppStorage("aiWordPrompt") private var aiWordPrompt = ""
+    @AppStorage("wrongWordsData") private var wrongWordsData = ""
 
     @State private var parentPINInput = ""
     @State private var newParentPIN = ""
@@ -614,11 +623,24 @@ struct ContentView: View {
     }
 
     private var wordChallengeFinished: Bool {
-        wordQuestionIndex >= Self.wordQuestions.count
+        wordQuestionIndex >= dailyWordQuestions.count
     }
 
     private var currentWordQuestion: WordQuestion {
-        Self.wordQuestions[min(wordQuestionIndex, Self.wordQuestions.count - 1)]
+        dailyWordQuestions[min(wordQuestionIndex, dailyWordQuestions.count - 1)]
+    }
+
+    private var dailyWordQuestions: [WordQuestion] {
+        let customQuestions = parseCustomWordList()
+        let source = customQuestions.isEmpty ? Self.words(for: wordLevel) : customQuestions
+        return Array(source.prefix(max(1, min(dailyWordGoal, source.count))))
+    }
+
+    private var wrongWords: [String] {
+        wrongWordsData
+            .split(separator: "|")
+            .map { String($0) }
+            .filter { !$0.isEmpty }
     }
 
     var body: some View {
@@ -708,8 +730,8 @@ struct ContentView: View {
             HStack(spacing: 12) {
                 StatCard(
                     title: "Gate",
-                    value: "\(min(wordQuestionIndex + 1, Self.wordQuestions.count))",
-                    subtitle: "of \(Self.wordQuestions.count)",
+                    value: "\(min(wordQuestionIndex + 1, dailyWordQuestions.count))",
+                    subtitle: "of \(dailyWordQuestions.count)",
                     color: .purple,
                     iconName: "flag.checkered"
                 )
@@ -723,11 +745,17 @@ struct ContentView: View {
                 )
             }
 
+            Text("Level: \(wordLevel) | Daily goal: \(dailyWordQuestions.count) words")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
             if wordChallengeFinished {
                 wordChallengeCompleteCard
             } else {
                 wordQuestionCard
             }
+
+            wrongWordsReviewCard
 
             Text(wordFeedback)
                 .font(.footnote)
@@ -809,7 +837,7 @@ struct ContentView: View {
                 .font(.title)
                 .bold()
 
-            Text("Score: \(wordCorrectCount) / \(Self.wordQuestions.count)")
+            Text("Score: \(wordCorrectCount) / \(dailyWordQuestions.count)")
                 .font(.headline)
 
             Text("English task is now completed. Your earned game time has been updated.")
@@ -820,6 +848,47 @@ struct ContentView: View {
         .background(Color.green.opacity(0.14))
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
+    }
+
+    private var wrongWordsReviewCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "book.closed.fill")
+                    .foregroundStyle(.orange)
+
+                Text("Wrong Words")
+                    .font(.headline)
+
+                Spacer()
+
+                Text("\(wrongWords.count)")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            }
+
+            if wrongWords.isEmpty {
+                Text("No wrong words yet. Keep going.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(wrongWords.prefix(8).joined(separator: ", "))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
+                wrongWordsData = ""
+            } label: {
+                Label("Clear Wrong Words", systemImage: "trash")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(wrongWords.isEmpty)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.88))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var recordsView: some View {
@@ -906,6 +975,7 @@ struct ContentView: View {
             cloudSyncCard
             childProfileCard
             parentTaskSettingsCard
+            parentWordSettingsCard
             parentRewardSettingsCard
             parentPINCard
             parentNotesCard
@@ -1259,6 +1329,11 @@ struct ContentView: View {
             mathNote = settings.math_note
             englishNote = settings.english_note
             readingNote = settings.reading_note
+            wordLevel = settings.word_level ?? wordLevel
+            dailyWordGoal = settings.daily_word_goal ?? dailyWordGoal
+            customWordList = settings.custom_word_list ?? customWordList
+            aiWordPrompt = settings.ai_word_prompt ?? aiWordPrompt
+            resetWordChallenge()
             updateTodayProgress()
         }
     }
@@ -1312,6 +1387,47 @@ struct ContentView: View {
 
             TextField("Reading note", text: $readingNote)
                 .textFieldStyle(.roundedBorder)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var parentWordSettingsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "textformat.abc")
+                    .foregroundStyle(.purple)
+
+                Text("Word Challenge")
+                    .font(.headline)
+            }
+
+            Text("Choose a level, set the daily word goal, or paste custom words from the parent web dashboard.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Picker("Word Level", selection: $wordLevel) {
+                Text("Starter").tag("Starter")
+                Text("Builder").tag("Builder")
+                Text("Explorer").tag("Explorer")
+            }
+            .pickerStyle(.segmented)
+
+            Stepper("Daily words: \(dailyWordGoal)", value: $dailyWordGoal, in: 5...10, step: 1)
+
+            TextField("Custom words: apple=苹果, brave=勇敢", text: $customWordList, axis: .vertical)
+                .lineLimit(2...4)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("AI prompt for future generation", text: $aiWordPrompt, axis: .vertical)
+                .lineLimit(2...4)
+                .textFieldStyle(.roundedBorder)
+
+            Text("Active word list: \(dailyWordQuestions.count) words. AI generation is prepared for a later backend connection.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1436,6 +1552,7 @@ struct ContentView: View {
             wordFeedback = "Correct. \(question.word) means \(question.correctMeaning)."
         } else {
             wordFeedback = "Good try. \(question.word) means \(question.correctMeaning)."
+            saveWrongWord(question)
         }
 
         wordQuestionIndex += 1
@@ -1450,6 +1567,13 @@ struct ContentView: View {
         wordQuestionIndex = 0
         wordCorrectCount = 0
         wordFeedback = "Choose the correct meaning to pass each word gate."
+    }
+
+    private func saveWrongWord(_ question: WordQuestion) {
+        let entry = "\(question.word): \(question.correctMeaning)"
+        var words = wrongWords.filter { $0 != entry }
+        words.insert(entry, at: 0)
+        wrongWordsData = words.prefix(30).joined(separator: "|")
     }
 
     private func appBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -1548,6 +1672,31 @@ struct ContentView: View {
         return records.sorted { $0.dateKey > $1.dateKey }
     }
 
+    private func parseCustomWordList() -> [WordQuestion] {
+        customWordList
+            .split(whereSeparator: { $0 == "\n" || $0 == "," || $0 == ";" })
+            .compactMap { rawItem in
+                let parts = rawItem.split(separator: "=", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else {
+                    return nil
+                }
+
+                return WordQuestion(
+                    word: parts[0],
+                    pronunciation: "custom",
+                    correctMeaning: parts[1],
+                    options: makeOptions(correct: parts[1]),
+                    example: "Parent custom word: \(parts[0])"
+                )
+            }
+    }
+
+    private func makeOptions(correct: String) -> [String] {
+        let distractors = ["a place", "a feeling", "an action", "a person", "a thing", "a time"]
+            .filter { $0 != correct }
+        return Array(([correct] + distractors).prefix(3))
+    }
+
     private func streakCount(from records: [DailyRecord]) -> Int {
         var streak = 0
         var date = Calendar.current.startOfDay(for: Date())
@@ -1570,42 +1719,54 @@ struct ContentView: View {
         return streak
     }
 
-    private static let wordQuestions: [WordQuestion] = [
-        WordQuestion(
-            word: "brave",
-            pronunciation: "/breiv/",
-            correctMeaning: "not afraid",
-            options: ["not afraid", "very slow", "full of water"],
-            example: "She was brave during the storm."
-        ),
-        WordQuestion(
-            word: "garden",
-            pronunciation: "/gar-den/",
-            correctMeaning: "a place to grow plants",
-            options: ["a place to grow plants", "a small computer", "a loud sound"],
-            example: "Dad grows tomatoes in the garden."
-        ),
-        WordQuestion(
-            word: "quick",
-            pronunciation: "/kwik/",
-            correctMeaning: "fast",
-            options: ["cold", "fast", "quiet"],
-            example: "The quick runner won the race."
-        ),
-        WordQuestion(
-            word: "share",
-            pronunciation: "/shair/",
-            correctMeaning: "to use with others",
-            options: ["to sleep early", "to use with others", "to draw a line"],
-            example: "Please share your crayons."
-        ),
-        WordQuestion(
-            word: "bright",
-            pronunciation: "/brite/",
-            correctMeaning: "full of light",
-            options: ["full of light", "hard to carry", "very hungry"],
-            example: "The room is bright in the morning."
-        )
+    private static func words(for level: String) -> [WordQuestion] {
+        switch level {
+        case "Builder":
+            return builderWords
+        case "Explorer":
+            return explorerWords
+        default:
+            return starterWords
+        }
+    }
+
+    private static let starterWords: [WordQuestion] = [
+        WordQuestion(word: "brave", pronunciation: "/breiv/", correctMeaning: "not afraid", options: ["not afraid", "very slow", "full of water"], example: "She was brave during the storm."),
+        WordQuestion(word: "garden", pronunciation: "/gar-den/", correctMeaning: "a place to grow plants", options: ["a place to grow plants", "a small computer", "a loud sound"], example: "Dad grows tomatoes in the garden."),
+        WordQuestion(word: "quick", pronunciation: "/kwik/", correctMeaning: "fast", options: ["cold", "fast", "quiet"], example: "The quick runner won the race."),
+        WordQuestion(word: "share", pronunciation: "/shair/", correctMeaning: "to use with others", options: ["to sleep early", "to use with others", "to draw a line"], example: "Please share your crayons."),
+        WordQuestion(word: "bright", pronunciation: "/brite/", correctMeaning: "full of light", options: ["full of light", "hard to carry", "very hungry"], example: "The room is bright in the morning."),
+        WordQuestion(word: "kind", pronunciation: "/kynd/", correctMeaning: "nice to others", options: ["nice to others", "very heavy", "not clean"], example: "A kind friend helps others."),
+        WordQuestion(word: "river", pronunciation: "/ri-ver/", correctMeaning: "moving water", options: ["moving water", "a school room", "a small bag"], example: "The river runs through town."),
+        WordQuestion(word: "quiet", pronunciation: "/kwy-et/", correctMeaning: "not loud", options: ["not loud", "very tall", "made of wood"], example: "The library is quiet."),
+        WordQuestion(word: "happy", pronunciation: "/hap-ee/", correctMeaning: "feeling good", options: ["feeling good", "moving fast", "hard to see"], example: "The child is happy."),
+        WordQuestion(word: "clean", pronunciation: "/kleen/", correctMeaning: "not dirty", options: ["not dirty", "very old", "full of sound"], example: "Keep your desk clean.")
+    ]
+
+    private static let builderWords: [WordQuestion] = [
+        WordQuestion(word: "curious", pronunciation: "/kyur-ee-us/", correctMeaning: "wanting to know", options: ["wanting to know", "easy to break", "full of rain"], example: "A curious child asks questions."),
+        WordQuestion(word: "improve", pronunciation: "/im-proov/", correctMeaning: "to get better", options: ["to get better", "to hide away", "to fall asleep"], example: "Practice helps you improve."),
+        WordQuestion(word: "habit", pronunciation: "/hab-it/", correctMeaning: "something done often", options: ["something done often", "a large animal", "a kind of music"], example: "Reading daily is a good habit."),
+        WordQuestion(word: "protect", pronunciation: "/pro-tekt/", correctMeaning: "to keep safe", options: ["to keep safe", "to write quickly", "to make louder"], example: "A helmet can protect your head."),
+        WordQuestion(word: "choice", pronunciation: "/choys/", correctMeaning: "something you pick", options: ["something you pick", "a cold drink", "a tiny seed"], example: "You made a smart choice."),
+        WordQuestion(word: "focus", pronunciation: "/fo-kus/", correctMeaning: "to pay attention", options: ["to pay attention", "to jump high", "to open a door"], example: "Focus on one task first."),
+        WordQuestion(word: "result", pronunciation: "/re-zult/", correctMeaning: "what happens after", options: ["what happens after", "a green plant", "a paper box"], example: "Hard work brings a good result."),
+        WordQuestion(word: "patient", pronunciation: "/pay-shent/", correctMeaning: "able to wait", options: ["able to wait", "full of light", "very noisy"], example: "Be patient while learning."),
+        WordQuestion(word: "effort", pronunciation: "/ef-ert/", correctMeaning: "hard work", options: ["hard work", "a blue color", "a short song"], example: "Your effort matters."),
+        WordQuestion(word: "create", pronunciation: "/kree-ayt/", correctMeaning: "to make", options: ["to make", "to forget", "to sit"], example: "You can create a story.")
+    ]
+
+    private static let explorerWords: [WordQuestion] = [
+        WordQuestion(word: "discover", pronunciation: "/dis-kuh-ver/", correctMeaning: "to find out", options: ["to find out", "to close tightly", "to walk slowly"], example: "Scientists discover new ideas."),
+        WordQuestion(word: "confident", pronunciation: "/kon-fi-dent/", correctMeaning: "sure of yourself", options: ["sure of yourself", "afraid of water", "very messy"], example: "She felt confident after practice."),
+        WordQuestion(word: "compare", pronunciation: "/kum-pair/", correctMeaning: "to look for differences", options: ["to look for differences", "to carry food", "to sleep late"], example: "Compare the two answers."),
+        WordQuestion(word: "explain", pronunciation: "/eks-playn/", correctMeaning: "to make clear", options: ["to make clear", "to run outside", "to paint red"], example: "Can you explain your idea?"),
+        WordQuestion(word: "balance", pronunciation: "/bal-ans/", correctMeaning: "to keep steady", options: ["to keep steady", "to become angry", "to count money"], example: "Balance study and play."),
+        WordQuestion(word: "strategy", pronunciation: "/strat-uh-jee/", correctMeaning: "a plan", options: ["a plan", "a small chair", "a kind of fruit"], example: "Use a strategy to solve it."),
+        WordQuestion(word: "responsible", pronunciation: "/ri-spon-suh-bul/", correctMeaning: "trusted to do things", options: ["trusted to do things", "easy to bend", "covered in snow"], example: "Be responsible with your time."),
+        WordQuestion(word: "achieve", pronunciation: "/uh-cheev/", correctMeaning: "to reach a goal", options: ["to reach a goal", "to make a noise", "to turn around"], example: "You can achieve your goal."),
+        WordQuestion(word: "decision", pronunciation: "/di-sizh-un/", correctMeaning: "a choice you make", options: ["a choice you make", "a round stone", "a warm coat"], example: "That was a wise decision."),
+        WordQuestion(word: "practice", pronunciation: "/prak-tis/", correctMeaning: "to do again to improve", options: ["to do again to improve", "to eat quickly", "to close a book"], example: "Practice makes skills stronger.")
     ]
 
     private static let dayFormatter: DateFormatter = {

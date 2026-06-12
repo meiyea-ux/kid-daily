@@ -103,6 +103,23 @@
         <input class="text-input" id="remote-english-note" type="text" value="Learn words and sentences" aria-label="英语备注">
         <input class="text-input" id="remote-reading-note" type="text" value="Read a story or book" aria-label="阅读备注">
       </div>
+      <div class="remote-settings-grid word-settings-grid">
+        <label>
+          Word level
+          <select class="text-input" id="remote-word-level">
+            <option value="Starter">Starter</option>
+            <option value="Builder">Builder</option>
+            <option value="Explorer">Explorer</option>
+          </select>
+        </label>
+        <label>
+          Daily words
+          <input class="text-input" id="remote-daily-word-goal" type="number" min="5" max="10" step="1" value="10">
+        </label>
+      </div>
+      <textarea class="text-input remote-word-textarea" id="remote-custom-word-list" rows="3" placeholder="Custom words, e.g. apple=苹果, brave=勇敢"></textarea>
+      <textarea class="text-input remote-word-textarea" id="remote-ai-word-prompt" rows="3" placeholder="AI prompt for future generation, e.g. Grade 2 animals and food words"></textarea>
+      <p class="remote-ai-note">AI generation is prepared here. The safe version should call AI from a backend, not directly from the child app.</p>
       <div class="remote-sync-actions">
         <button class="secondary-button" type="button" id="load-remote-settings-button">读取远程设置</button>
         <button class="save-button" type="button" id="save-remote-settings-button">保存远程设置</button>

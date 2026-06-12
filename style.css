@@ -412,6 +412,22 @@ a {
   font-weight: 900;
 }
 
+.word-settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.remote-word-textarea {
+  width: 100%;
+  min-height: 86px;
+  resize: vertical;
+}
+
+.remote-ai-note {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
 #remote-settings-status {
   margin: 0;
   color: #64748b;
