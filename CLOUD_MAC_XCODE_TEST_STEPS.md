@@ -32,6 +32,20 @@ These steps are for testing the SwiftUI version of KidDaily on your cloud Mac.
 3. Do not add `KidDailyApp.swift` if the project already has an `@main` app file.
 4. Build and run in Xcode.
 
+## HealthKit Setup For Real Device Testing
+
+Health data from iPhone / Apple Watch requires a real iPhone and the HealthKit capability.
+
+1. Open `KidDaily project > Target KidDaily > Signing & Capabilities`.
+2. Click `+ Capability`.
+3. Add `HealthKit`.
+4. Run on a real iPhone.
+5. Open the `Move` tab.
+6. Tap `Request Health Permission`.
+7. Allow steps, exercise minutes, active energy, and workouts in the iOS permission sheet.
+
+The iOS Simulator cannot read real Apple Watch Health data.
+
 ## Command Line Build Test
 
 From the project folder on the cloud Mac:
@@ -91,3 +105,6 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - Web parent dashboard can refresh iOS records from Supabase for remote monitoring.
 - Web parent dashboard can adjust task minutes and entertainment reward minutes remotely.
 - iOS Parent tab can sync those remote settings by pairing code.
+- The app now has a `Move` tab for HealthKit sync.
+- `Move` can read today's steps, Apple exercise minutes, active energy, and latest workout when HealthKit is available.
+- Apple Watch workout data appears after it syncs into the iPhone Health app.

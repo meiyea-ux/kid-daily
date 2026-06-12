@@ -10,6 +10,10 @@ import FamilyControls
 import ManagedSettings
 #endif
 
+#if canImport(HealthKit)
+import HealthKit
+#endif
+
 struct DailyRecord: Identifiable, Codable {
     var id: String { dateKey }
     let dateKey: String
@@ -128,6 +132,184 @@ final class ScreenTimeManager: ObservableObject {
         #endif
     }
 }
+
+@MainActor
+final class HealthSyncManager: ObservableObject {
+    @Published var statusMessage = "Health sync is ready for iPhone and Apple Watch data."
+    @Published var isSyncing = false
+    @Published var steps = 0
+    @Published var exerciseMinutes = 0
+    @Published var activeEnergyKcal = 0
+    @Published var latestWorkoutName = "No workout yet"
+    @Published var latestWorkoutMinutes = 0
+
+    #if canImport(HealthKit)
+    private let healthStore = HKHealthStore()
+    #endif
+
+    var isHealthDataAvailable: Bool {
+        #if canImport(HealthKit)
+        HKHealthStore.isHealthDataAvailable()
+        #else
+        false
+        #endif
+    }
+
+    func requestAuthorizationAndSync() async {
+        #if canImport(HealthKit)
+        guard isHealthDataAvailable else {
+            statusMessage = "Health data is not available on this device. Test on a real iPhone."
+            return
+        }
+
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount),
+              let exerciseType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime),
+              let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+            statusMessage = "HealthKit quantity types are unavailable."
+            return
+        }
+
+        let readTypes: Set<HKObjectType> = [
+            stepType,
+            exerciseType,
+            energyType,
+            HKObjectType.workoutType()
+        ]
+
+        do {
+            statusMessage = "Requesting Health permission..."
+            try await requestHealthAuthorization(readTypes: readTypes)
+            await syncTodayHealthData()
+        } catch {
+            statusMessage = "Health permission failed: \(error.localizedDescription)"
+        }
+        #else
+        statusMessage = "HealthKit is unavailable in this build."
+        #endif
+    }
+
+    func syncTodayHealthData() async {
+        #if canImport(HealthKit)
+        guard isHealthDataAvailable else {
+            statusMessage = "Health data is not available on this device. Test on a real iPhone."
+            return
+        }
+
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount),
+              let exerciseType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime),
+              let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+            statusMessage = "HealthKit quantity types are unavailable."
+            return
+        }
+
+        isSyncing = true
+        statusMessage = "Syncing today's Health data..."
+
+        async let todaySteps = sumQuantity(stepType, unit: HKUnit.count())
+        async let todayExercise = sumQuantity(exerciseType, unit: HKUnit.minute())
+        async let todayEnergy = sumQuantity(energyType, unit: HKUnit.kilocalorie())
+        async let workout = latestWorkout()
+
+        let syncedSteps = await todaySteps
+        let syncedExercise = await todayExercise
+        let syncedEnergy = await todayEnergy
+        let syncedWorkout = await workout
+
+        steps = Int(syncedSteps.rounded())
+        exerciseMinutes = Int(syncedExercise.rounded())
+        activeEnergyKcal = Int(syncedEnergy.rounded())
+        latestWorkoutName = syncedWorkout.name
+        latestWorkoutMinutes = syncedWorkout.minutes
+        isSyncing = false
+        statusMessage = "Health data synced from iPhone / Apple Watch."
+        #else
+        statusMessage = "HealthKit is unavailable in this build."
+        #endif
+    }
+
+    #if canImport(HealthKit)
+    private func todayPredicate() -> NSPredicate {
+        let start = Calendar.current.startOfDay(for: Date())
+        return HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
+    }
+
+    private func requestHealthAuthorization(readTypes: Set<HKObjectType>) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            healthStore.requestAuthorization(toShare: [], read: readTypes) { success, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if success {
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: NSError(domain: "KidDailyHealth", code: 1, userInfo: [NSLocalizedDescriptionKey: "Health permission was not granted."]))
+                }
+            }
+        }
+    }
+
+    private func sumQuantity(_ type: HKQuantityType, unit: HKUnit) async -> Double {
+        await withCheckedContinuation { continuation in
+            let query = HKStatisticsQuery(
+                quantityType: type,
+                quantitySamplePredicate: todayPredicate(),
+                options: .cumulativeSum
+            ) { _, statistics, _ in
+                let value = statistics?.sumQuantity()?.doubleValue(for: unit) ?? 0
+                continuation.resume(returning: value)
+            }
+
+            healthStore.execute(query)
+        }
+    }
+
+    private func latestWorkout() async -> (name: String, minutes: Int) {
+        await withCheckedContinuation { continuation in
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+            let query = HKSampleQuery(
+                sampleType: HKObjectType.workoutType(),
+                predicate: todayPredicate(),
+                limit: 1,
+                sortDescriptors: [sort]
+            ) { _, samples, _ in
+                guard let workout = samples?.first as? HKWorkout else {
+                    continuation.resume(returning: ("No workout yet", 0))
+                    return
+                }
+
+                let minutes = Int((workout.endDate.timeIntervalSince(workout.startDate) / 60).rounded())
+                continuation.resume(returning: (workout.workoutActivityType.displayName, minutes))
+            }
+
+            healthStore.execute(query)
+        }
+    }
+    #endif
+}
+
+#if canImport(HealthKit)
+private extension HKWorkoutActivityType {
+    var displayName: String {
+        switch self {
+        case .running:
+            return "Running"
+        case .walking:
+            return "Walking"
+        case .cycling:
+            return "Cycling"
+        case .swimming:
+            return "Swimming"
+        case .traditionalStrengthTraining:
+            return "Strength Training"
+        case .yoga:
+            return "Yoga"
+        case .dance:
+            return "Dance"
+        default:
+            return "Workout"
+        }
+    }
+}
+#endif
 
 @MainActor
 final class CloudSyncManager: ObservableObject {
@@ -545,6 +727,7 @@ struct WordQuestion: Identifiable {
 struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager()
     @StateObject private var cloudSyncManager = CloudSyncManager()
+    @StateObject private var healthSyncManager = HealthSyncManager()
 
     @AppStorage("mathCompleted") private var mathCompleted = false
     @AppStorage("englishCompleted") private var englishCompleted = false
@@ -663,6 +846,16 @@ struct ContentView: View {
             }
             .tabItem {
                 Label("Words", systemImage: "textformat.abc")
+            }
+
+            NavigationStack {
+                appBackground {
+                    movementView
+                }
+                .navigationTitle("Move")
+            }
+            .tabItem {
+                Label("Move", systemImage: "figure.walk")
             }
 
             NavigationStack {
@@ -891,6 +1084,104 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
+    private var movementView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Movement Check")
+                    .font(.largeTitle)
+                    .bold()
+
+                Text("Sync exercise results from iPhone Health and Apple Watch.")
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                StatCard(
+                    title: "Steps",
+                    value: "\(healthSyncManager.steps)",
+                    subtitle: "today",
+                    color: .green,
+                    iconName: "figure.walk"
+                )
+
+                StatCard(
+                    title: "Exercise",
+                    value: "\(healthSyncManager.exerciseMinutes)",
+                    subtitle: "min today",
+                    color: .orange,
+                    iconName: "figure.run"
+                )
+            }
+
+            HStack(spacing: 12) {
+                StatCard(
+                    title: "Active Energy",
+                    value: "\(healthSyncManager.activeEnergyKcal)",
+                    subtitle: "kcal",
+                    color: .red,
+                    iconName: "flame.fill"
+                )
+
+                StatCard(
+                    title: "Latest Workout",
+                    value: "\(healthSyncManager.latestWorkoutMinutes)",
+                    subtitle: healthSyncManager.latestWorkoutName,
+                    color: .blue,
+                    iconName: "figure.cooldown"
+                )
+            }
+
+            movementSyncCard
+        }
+        .padding()
+    }
+
+    private var movementSyncCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "heart.text.square.fill")
+                    .foregroundStyle(.red)
+
+                Text("Health Data Sync")
+                    .font(.headline)
+            }
+
+            Text("Reads today's steps, Apple exercise minutes, active energy, and latest workout. Apple Watch workouts appear here after they sync to the iPhone Health app.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Button {
+                Task {
+                    await healthSyncManager.requestAuthorizationAndSync()
+                }
+            } label: {
+                Label("Request Health Permission", systemImage: "heart.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(healthSyncManager.isSyncing)
+
+            Button {
+                Task {
+                    await healthSyncManager.syncTodayHealthData()
+                }
+            } label: {
+                Label(healthSyncManager.isSyncing ? "Syncing..." : "Sync Health Data", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(healthSyncManager.isSyncing)
+
+            Text(healthSyncManager.statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
     private var recordsView: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
@@ -972,6 +1263,7 @@ struct ContentView: View {
 
             parentControlCard
             screenTimeSetupCard
+            parentMovementCard
             cloudSyncCard
             childProfileCard
             parentTaskSettingsCard
@@ -1245,6 +1537,41 @@ struct ContentView: View {
                 title: "Monitor Usage",
                 description: "Read activity reports and update the parent dashboard."
             )
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var parentMovementCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "figure.walk.motion")
+                    .foregroundStyle(.green)
+
+                Text("Movement Results")
+                    .font(.headline)
+            }
+
+            Text("Today: \(healthSyncManager.steps) steps, \(healthSyncManager.exerciseMinutes) exercise minutes, \(healthSyncManager.activeEnergyKcal) kcal.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text("Latest workout: \(healthSyncManager.latestWorkoutName), \(healthSyncManager.latestWorkoutMinutes) min.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Button {
+                Task {
+                    await healthSyncManager.syncTodayHealthData()
+                }
+            } label: {
+                Label("Refresh Movement Data", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(healthSyncManager.isSyncing)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
