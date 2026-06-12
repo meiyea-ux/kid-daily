@@ -46,6 +46,19 @@ Health data from iPhone / Apple Watch requires a real iPhone and the HealthKit c
 
 The iOS Simulator cannot read real Apple Watch Health data.
 
+## Speech Recitation Setup For Real Device Testing
+
+Sentence recitation uses the microphone and Apple's Speech framework.
+
+1. Open `KidDaily project > Target KidDaily > Info`.
+2. Add these custom iOS target properties if they are missing:
+   - `Privacy - Microphone Usage Description`: `KidDaily uses the microphone for sentence recitation practice.`
+   - `Privacy - Speech Recognition Usage Description`: `KidDaily uses speech recognition to compare recited sentences with the learning library.`
+3. Run on a real iPhone.
+4. Open the `Words` tab.
+5. Tap `Start Reciting`.
+6. Allow microphone and speech recognition permissions.
+
 ## Command Line Build Test
 
 From the project folder on the cloud Mac:
@@ -108,3 +121,6 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - The app now has a `Move` tab for HealthKit sync.
 - `Move` can read today's steps, Apple exercise minutes, active energy, and latest workout when HealthKit is available.
 - Apple Watch workout data appears after it syncs into the iPhone Health app.
+- The `Words` tab now focuses on Gaokao vocabulary.
+- Each Gaokao word includes a sentence library item for recitation.
+- Sentence recitation uses speech input and compares the recognized text against the target sentence.

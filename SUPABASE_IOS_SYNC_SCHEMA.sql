@@ -24,7 +24,7 @@ create table if not exists public.child_remote_settings (
   math_note text not null default 'Practice number skills',
   english_note text not null default 'Learn words and sentences',
   reading_note text not null default 'Read a story or book',
-  word_level text not null default 'Starter',
+  word_level text not null default 'Gaokao Core',
   daily_word_goal integer not null default 10,
   custom_word_list text not null default '',
   ai_word_prompt text not null default '',
@@ -35,7 +35,7 @@ create index if not exists child_remote_settings_parent_idx
 on public.child_remote_settings(parent_user_id);
 
 alter table public.child_remote_settings
-add column if not exists word_level text not null default 'Starter';
+add column if not exists word_level text not null default 'Gaokao Core';
 
 alter table public.child_remote_settings
 add column if not exists daily_word_goal integer not null default 10;
@@ -123,7 +123,7 @@ begin
     coalesce(settings.math_note, 'Practice number skills'),
     coalesce(settings.english_note, 'Learn words and sentences'),
     coalesce(settings.reading_note, 'Read a story or book'),
-    coalesce(settings.word_level, 'Starter'),
+    coalesce(settings.word_level, 'Gaokao Core'),
     coalesce(settings.daily_word_goal, 10),
     coalesce(settings.custom_word_list, ''),
     coalesce(settings.ai_word_prompt, '')

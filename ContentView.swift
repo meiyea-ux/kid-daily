@@ -14,6 +14,11 @@ import ManagedSettings
 import HealthKit
 #endif
 
+#if canImport(Speech) && canImport(AVFoundation)
+import Speech
+import AVFoundation
+#endif
+
 struct DailyRecord: Identifiable, Codable {
     var id: String { dateKey }
     let dateKey: String
@@ -310,6 +315,128 @@ private extension HKWorkoutActivityType {
     }
 }
 #endif
+
+@MainActor
+final class SpeechRecitationManager: NSObject, ObservableObject {
+    @Published var transcript = ""
+    @Published var statusMessage = "Tap record and recite the sentence aloud."
+    @Published var isRecording = false
+
+    #if canImport(Speech) && canImport(AVFoundation)
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private let audioEngine = AVAudioEngine()
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    #endif
+
+    func startRecording() async {
+        #if canImport(Speech) && canImport(AVFoundation)
+        guard !isRecording else { return }
+
+        do {
+            try await requestPermissions()
+            try beginRecognition()
+        } catch {
+            statusMessage = "Speech recitation failed: \(error.localizedDescription)"
+            stopRecording()
+        }
+        #else
+        statusMessage = "Speech recognition is unavailable in this build."
+        #endif
+    }
+
+    func stopRecording() {
+        #if canImport(Speech) && canImport(AVFoundation)
+        if audioEngine.isRunning {
+            audioEngine.stop()
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionRequest = nil
+        recognitionTask = nil
+        isRecording = false
+        statusMessage = transcript.isEmpty ? "Recording stopped. Try reciting again." : "Recording stopped. Compare your sentence below."
+        #else
+        statusMessage = "Speech recognition is unavailable in this build."
+        #endif
+    }
+
+    func reset() {
+        stopRecording()
+        transcript = ""
+        statusMessage = "Tap record and recite the sentence aloud."
+    }
+
+    #if canImport(Speech) && canImport(AVFoundation)
+    private func requestPermissions() async throws {
+        let speechStatus = await withCheckedContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { status in
+                continuation.resume(returning: status)
+            }
+        }
+
+        guard speechStatus == .authorized else {
+            throw NSError(domain: "KidDailySpeech", code: 1, userInfo: [NSLocalizedDescriptionKey: "Speech recognition permission was not granted."])
+        }
+
+        let microphoneAllowed = await withCheckedContinuation { continuation in
+            AVAudioSession.sharedInstance().requestRecordPermission { allowed in
+                continuation.resume(returning: allowed)
+            }
+        }
+
+        guard microphoneAllowed else {
+            throw NSError(domain: "KidDailySpeech", code: 2, userInfo: [NSLocalizedDescriptionKey: "Microphone permission was not granted."])
+        }
+    }
+
+    private func beginRecognition() throws {
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        transcript = ""
+
+        let audioSession = AVAudioSession.sharedInstance()
+        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        recognitionRequest = request
+
+        guard let speechRecognizer, speechRecognizer.isAvailable else {
+            throw NSError(domain: "KidDailySpeech", code: 3, userInfo: [NSLocalizedDescriptionKey: "English speech recognizer is not available now."])
+        }
+
+        let inputNode = audioEngine.inputNode
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+            request.append(buffer)
+        }
+
+        audioEngine.prepare()
+        try audioEngine.start()
+        isRecording = true
+        statusMessage = "Listening. Recite the sentence clearly."
+
+        recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
+            Task { @MainActor in
+                guard let self else { return }
+
+                if let result {
+                    self.transcript = result.bestTranscription.formattedString
+                }
+
+                if error != nil || result?.isFinal == true {
+                    self.stopRecording()
+                }
+            }
+        }
+    }
+    #endif
+}
 
 @MainActor
 final class CloudSyncManager: ObservableObject {
@@ -728,6 +855,7 @@ struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager()
     @StateObject private var cloudSyncManager = CloudSyncManager()
     @StateObject private var healthSyncManager = HealthSyncManager()
+    @StateObject private var speechRecitationManager = SpeechRecitationManager()
 
     @AppStorage("mathCompleted") private var mathCompleted = false
     @AppStorage("englishCompleted") private var englishCompleted = false
@@ -744,7 +872,7 @@ struct ContentView: View {
     @AppStorage("englishNote") private var englishNote = "Learn words and sentences"
     @AppStorage("readingNote") private var readingNote = "Read a story or book"
     @AppStorage("webPairingCode") private var webPairingCode = ""
-    @AppStorage("wordLevel") private var wordLevel = "Starter"
+    @AppStorage("wordLevel") private var wordLevel = "Gaokao Core"
     @AppStorage("dailyWordGoal") private var dailyWordGoal = 10
     @AppStorage("customWordList") private var customWordList = ""
     @AppStorage("aiWordPrompt") private var aiWordPrompt = ""
@@ -1006,6 +1134,8 @@ struct ContentView: View {
                     .buttonStyle(.plain)
                 }
             }
+
+            sentenceRecitationCard(for: question)
         }
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1041,6 +1171,83 @@ struct ContentView: View {
         .background(Color.green.opacity(0.14))
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
+    }
+
+    private func sentenceRecitationCard(for question: WordQuestion) -> some View {
+        let score = recitationScore(expected: question.example, spoken: speechRecitationManager.transcript)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "waveform.circle.fill")
+                    .foregroundStyle(.blue)
+
+                Text("Sentence Recitation")
+                    .font(.headline)
+
+                Spacer()
+
+                Text("\(score)%")
+                    .font(.headline)
+                    .foregroundStyle(score >= 80 ? .green : .orange)
+            }
+
+            Text("Target sentence")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(question.example)
+                .font(.headline)
+
+            if !speechRecitationManager.transcript.isEmpty {
+                Text("Your speech")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text(speechRecitationManager.transcript)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                ProgressView(value: Double(score), total: 100)
+                    .tint(score >= 80 ? .green : .orange)
+            }
+
+            HStack {
+                Button {
+                    Task {
+                        await speechRecitationManager.startRecording()
+                    }
+                } label: {
+                    Label(speechRecitationManager.isRecording ? "Recording..." : "Start Reciting", systemImage: "mic.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(speechRecitationManager.isRecording)
+
+                Button {
+                    speechRecitationManager.stopRecording()
+                } label: {
+                    Label("Stop", systemImage: "stop.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(!speechRecitationManager.isRecording)
+            }
+
+            Button {
+                speechRecitationManager.reset()
+            } label: {
+                Label("Clear Speech Result", systemImage: "xmark.circle")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+
+            Text(speechRecitationManager.statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .background(Color.white.opacity(0.88))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var wrongWordsReviewCard: some View {
@@ -1736,15 +1943,15 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
 
             Picker("Word Level", selection: $wordLevel) {
-                Text("Starter").tag("Starter")
-                Text("Builder").tag("Builder")
-                Text("Explorer").tag("Explorer")
+                Text("Core").tag("Gaokao Core")
+                Text("Advanced").tag("Gaokao Advanced")
+                Text("Challenge").tag("Gaokao Challenge")
             }
             .pickerStyle(.segmented)
 
             Stepper("Daily words: \(dailyWordGoal)", value: $dailyWordGoal, in: 5...10, step: 1)
 
-            TextField("Custom words: apple=苹果, brave=勇敢", text: $customWordList, axis: .vertical)
+            TextField("Custom words: abandon=放弃=Never abandon your dream.", text: $customWordList, axis: .vertical)
                 .lineLimit(2...4)
                 .textFieldStyle(.roundedBorder)
 
@@ -1883,6 +2090,7 @@ struct ContentView: View {
         }
 
         wordQuestionIndex += 1
+        speechRecitationManager.reset()
 
         if wordChallengeFinished {
             englishCompleted = true
@@ -1894,6 +2102,7 @@ struct ContentView: View {
         wordQuestionIndex = 0
         wordCorrectCount = 0
         wordFeedback = "Choose the correct meaning to pass each word gate."
+        speechRecitationManager.reset()
     }
 
     private func saveWrongWord(_ question: WordQuestion) {
@@ -1901,6 +2110,22 @@ struct ContentView: View {
         var words = wrongWords.filter { $0 != entry }
         words.insert(entry, at: 0)
         wrongWordsData = words.prefix(30).joined(separator: "|")
+    }
+
+    private func recitationScore(expected: String, spoken: String) -> Int {
+        let expectedWords = normalizedWords(from: expected)
+        let spokenWords = Set(normalizedWords(from: spoken))
+        guard !expectedWords.isEmpty, !spokenWords.isEmpty else { return 0 }
+
+        let matchedCount = expectedWords.filter { spokenWords.contains($0) }.count
+        return Int((Double(matchedCount) / Double(expectedWords.count) * 100).rounded())
+    }
+
+    private func normalizedWords(from text: String) -> [String] {
+        text
+            .lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
     }
 
     private func appBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -2003,17 +2228,19 @@ struct ContentView: View {
         customWordList
             .split(whereSeparator: { $0 == "\n" || $0 == "," || $0 == ";" })
             .compactMap { rawItem in
-                let parts = rawItem.split(separator: "=", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-                guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else {
+                let parts = rawItem.split(separator: "=", maxSplits: 2).map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                guard parts.count >= 2, !parts[0].isEmpty, !parts[1].isEmpty else {
                     return nil
                 }
+
+                let sentence = parts.count >= 3 && !parts[2].isEmpty ? parts[2] : "Please recite a sentence with \(parts[0])."
 
                 return WordQuestion(
                     word: parts[0],
                     pronunciation: "custom",
                     correctMeaning: parts[1],
                     options: makeOptions(correct: parts[1]),
-                    example: "Parent custom word: \(parts[0])"
+                    example: sentence
                 )
             }
     }
@@ -2048,52 +2275,52 @@ struct ContentView: View {
 
     private static func words(for level: String) -> [WordQuestion] {
         switch level {
-        case "Builder":
-            return builderWords
-        case "Explorer":
-            return explorerWords
+        case "Gaokao Advanced", "Builder":
+            return gaokaoAdvancedWords
+        case "Gaokao Challenge", "Explorer":
+            return gaokaoChallengeWords
         default:
-            return starterWords
+            return gaokaoCoreWords
         }
     }
 
-    private static let starterWords: [WordQuestion] = [
-        WordQuestion(word: "brave", pronunciation: "/breiv/", correctMeaning: "not afraid", options: ["not afraid", "very slow", "full of water"], example: "She was brave during the storm."),
-        WordQuestion(word: "garden", pronunciation: "/gar-den/", correctMeaning: "a place to grow plants", options: ["a place to grow plants", "a small computer", "a loud sound"], example: "Dad grows tomatoes in the garden."),
-        WordQuestion(word: "quick", pronunciation: "/kwik/", correctMeaning: "fast", options: ["cold", "fast", "quiet"], example: "The quick runner won the race."),
-        WordQuestion(word: "share", pronunciation: "/shair/", correctMeaning: "to use with others", options: ["to sleep early", "to use with others", "to draw a line"], example: "Please share your crayons."),
-        WordQuestion(word: "bright", pronunciation: "/brite/", correctMeaning: "full of light", options: ["full of light", "hard to carry", "very hungry"], example: "The room is bright in the morning."),
-        WordQuestion(word: "kind", pronunciation: "/kynd/", correctMeaning: "nice to others", options: ["nice to others", "very heavy", "not clean"], example: "A kind friend helps others."),
-        WordQuestion(word: "river", pronunciation: "/ri-ver/", correctMeaning: "moving water", options: ["moving water", "a school room", "a small bag"], example: "The river runs through town."),
-        WordQuestion(word: "quiet", pronunciation: "/kwy-et/", correctMeaning: "not loud", options: ["not loud", "very tall", "made of wood"], example: "The library is quiet."),
-        WordQuestion(word: "happy", pronunciation: "/hap-ee/", correctMeaning: "feeling good", options: ["feeling good", "moving fast", "hard to see"], example: "The child is happy."),
-        WordQuestion(word: "clean", pronunciation: "/kleen/", correctMeaning: "not dirty", options: ["not dirty", "very old", "full of sound"], example: "Keep your desk clean.")
+    private static let gaokaoCoreWords: [WordQuestion] = [
+        WordQuestion(word: "abandon", pronunciation: "/uh-ban-duhn/", correctMeaning: "放弃", options: ["放弃", "吸收", "适应"], example: "Never abandon your dream when life becomes difficult."),
+        WordQuestion(word: "ability", pronunciation: "/uh-bil-uh-tee/", correctMeaning: "能力", options: ["能力", "态度", "证据"], example: "Reading every day can improve your language ability."),
+        WordQuestion(word: "abroad", pronunciation: "/uh-brawd/", correctMeaning: "在国外", options: ["在国外", "准确的", "方便的"], example: "Many students hope to study abroad in the future."),
+        WordQuestion(word: "absorb", pronunciation: "/uhb-zorb/", correctMeaning: "吸收", options: ["吸收", "争论", "表明"], example: "Good learners absorb new knowledge from mistakes."),
+        WordQuestion(word: "academic", pronunciation: "/ak-uh-dem-ik/", correctMeaning: "学术的", options: ["学术的", "灵活的", "有效的"], example: "Academic success depends on effort and method."),
+        WordQuestion(word: "access", pronunciation: "/ak-ses/", correctMeaning: "通道；使用权", options: ["通道；使用权", "责任", "机会"], example: "The Internet gives students access to many resources."),
+        WordQuestion(word: "accurate", pronunciation: "/ak-yur-it/", correctMeaning: "准确的", options: ["准确的", "经济的", "自信的"], example: "An accurate answer requires careful reading."),
+        WordQuestion(word: "achieve", pronunciation: "/uh-cheev/", correctMeaning: "实现", options: ["实现", "比较", "保护"], example: "You can achieve your goal through daily practice."),
+        WordQuestion(word: "adapt", pronunciation: "/uh-dapt/", correctMeaning: "适应", options: ["适应", "创造", "影响"], example: "Teenagers need to adapt to a changing world."),
+        WordQuestion(word: "attitude", pronunciation: "/at-i-tood/", correctMeaning: "态度", options: ["态度", "结果", "平衡"], example: "A positive attitude helps us face challenges.")
     ]
 
-    private static let builderWords: [WordQuestion] = [
-        WordQuestion(word: "curious", pronunciation: "/kyur-ee-us/", correctMeaning: "wanting to know", options: ["wanting to know", "easy to break", "full of rain"], example: "A curious child asks questions."),
-        WordQuestion(word: "improve", pronunciation: "/im-proov/", correctMeaning: "to get better", options: ["to get better", "to hide away", "to fall asleep"], example: "Practice helps you improve."),
-        WordQuestion(word: "habit", pronunciation: "/hab-it/", correctMeaning: "something done often", options: ["something done often", "a large animal", "a kind of music"], example: "Reading daily is a good habit."),
-        WordQuestion(word: "protect", pronunciation: "/pro-tekt/", correctMeaning: "to keep safe", options: ["to keep safe", "to write quickly", "to make louder"], example: "A helmet can protect your head."),
-        WordQuestion(word: "choice", pronunciation: "/choys/", correctMeaning: "something you pick", options: ["something you pick", "a cold drink", "a tiny seed"], example: "You made a smart choice."),
-        WordQuestion(word: "focus", pronunciation: "/fo-kus/", correctMeaning: "to pay attention", options: ["to pay attention", "to jump high", "to open a door"], example: "Focus on one task first."),
-        WordQuestion(word: "result", pronunciation: "/re-zult/", correctMeaning: "what happens after", options: ["what happens after", "a green plant", "a paper box"], example: "Hard work brings a good result."),
-        WordQuestion(word: "patient", pronunciation: "/pay-shent/", correctMeaning: "able to wait", options: ["able to wait", "full of light", "very noisy"], example: "Be patient while learning."),
-        WordQuestion(word: "effort", pronunciation: "/ef-ert/", correctMeaning: "hard work", options: ["hard work", "a blue color", "a short song"], example: "Your effort matters."),
-        WordQuestion(word: "create", pronunciation: "/kree-ayt/", correctMeaning: "to make", options: ["to make", "to forget", "to sit"], example: "You can create a story.")
+    private static let gaokaoAdvancedWords: [WordQuestion] = [
+        WordQuestion(word: "approach", pronunciation: "/uh-prohch/", correctMeaning: "方法；接近", options: ["方法；接近", "环境", "证据"], example: "A good approach makes vocabulary learning easier."),
+        WordQuestion(word: "argument", pronunciation: "/ahr-gyuh-muhnt/", correctMeaning: "争论；论点", options: ["争论；论点", "机会", "责任"], example: "His argument was clear and supported by facts."),
+        WordQuestion(word: "benefit", pronunciation: "/ben-uh-fit/", correctMeaning: "益处", options: ["益处", "结果", "能力"], example: "Exercise can benefit both the body and the mind."),
+        WordQuestion(word: "challenge", pronunciation: "/chal-inj/", correctMeaning: "挑战", options: ["挑战", "选择", "习惯"], example: "Every challenge is a chance to become stronger."),
+        WordQuestion(word: "combine", pronunciation: "/kuhm-byn/", correctMeaning: "结合", options: ["结合", "放弃", "比较"], example: "KidDaily combines learning tasks with healthy habits."),
+        WordQuestion(word: "communicate", pronunciation: "/kuh-myoo-ni-kayt/", correctMeaning: "交流", options: ["交流", "适应", "吸收"], example: "We should communicate with parents honestly."),
+        WordQuestion(word: "concentrate", pronunciation: "/kon-suhn-trayt/", correctMeaning: "集中注意力", options: ["集中注意力", "实现", "影响"], example: "Put away your phone and concentrate on the sentence."),
+        WordQuestion(word: "consequence", pronunciation: "/kon-si-kwens/", correctMeaning: "后果", options: ["后果", "证据", "通道"], example: "Every choice may bring a consequence."),
+        WordQuestion(word: "contribute", pronunciation: "/kuhn-trib-yoot/", correctMeaning: "贡献", options: ["贡献", "保护", "解释"], example: "Small daily efforts contribute to future success."),
+        WordQuestion(word: "convenient", pronunciation: "/kuhn-veen-yuhnt/", correctMeaning: "方便的", options: ["方便的", "准确的", "学术的"], example: "Online tools make review more convenient.")
     ]
 
-    private static let explorerWords: [WordQuestion] = [
-        WordQuestion(word: "discover", pronunciation: "/dis-kuh-ver/", correctMeaning: "to find out", options: ["to find out", "to close tightly", "to walk slowly"], example: "Scientists discover new ideas."),
-        WordQuestion(word: "confident", pronunciation: "/kon-fi-dent/", correctMeaning: "sure of yourself", options: ["sure of yourself", "afraid of water", "very messy"], example: "She felt confident after practice."),
-        WordQuestion(word: "compare", pronunciation: "/kum-pair/", correctMeaning: "to look for differences", options: ["to look for differences", "to carry food", "to sleep late"], example: "Compare the two answers."),
-        WordQuestion(word: "explain", pronunciation: "/eks-playn/", correctMeaning: "to make clear", options: ["to make clear", "to run outside", "to paint red"], example: "Can you explain your idea?"),
-        WordQuestion(word: "balance", pronunciation: "/bal-ans/", correctMeaning: "to keep steady", options: ["to keep steady", "to become angry", "to count money"], example: "Balance study and play."),
-        WordQuestion(word: "strategy", pronunciation: "/strat-uh-jee/", correctMeaning: "a plan", options: ["a plan", "a small chair", "a kind of fruit"], example: "Use a strategy to solve it."),
-        WordQuestion(word: "responsible", pronunciation: "/ri-spon-suh-bul/", correctMeaning: "trusted to do things", options: ["trusted to do things", "easy to bend", "covered in snow"], example: "Be responsible with your time."),
-        WordQuestion(word: "achieve", pronunciation: "/uh-cheev/", correctMeaning: "to reach a goal", options: ["to reach a goal", "to make a noise", "to turn around"], example: "You can achieve your goal."),
-        WordQuestion(word: "decision", pronunciation: "/di-sizh-un/", correctMeaning: "a choice you make", options: ["a choice you make", "a round stone", "a warm coat"], example: "That was a wise decision."),
-        WordQuestion(word: "practice", pronunciation: "/prak-tis/", correctMeaning: "to do again to improve", options: ["to do again to improve", "to eat quickly", "to close a book"], example: "Practice makes skills stronger.")
+    private static let gaokaoChallengeWords: [WordQuestion] = [
+        WordQuestion(word: "distinguish", pronunciation: "/di-sting-gwish/", correctMeaning: "区分", options: ["区分", "贡献", "结合"], example: "Readers must distinguish facts from opinions."),
+        WordQuestion(word: "economy", pronunciation: "/ih-kon-uh-mee/", correctMeaning: "经济", options: ["经济", "态度", "证据"], example: "Education plays an important role in the economy."),
+        WordQuestion(word: "efficient", pronunciation: "/ih-fish-uhnt/", correctMeaning: "高效的", options: ["高效的", "方便的", "准确的"], example: "An efficient plan saves time before exams."),
+        WordQuestion(word: "environment", pronunciation: "/en-vy-ruhn-muhnt/", correctMeaning: "环境", options: ["环境", "后果", "能力"], example: "A quiet environment helps students concentrate."),
+        WordQuestion(word: "evidence", pronunciation: "/ev-i-duhns/", correctMeaning: "证据", options: ["证据", "机会", "挑战"], example: "The writer used evidence to support the argument."),
+        WordQuestion(word: "flexible", pronunciation: "/flek-suh-bul/", correctMeaning: "灵活的", options: ["灵活的", "学术的", "积极的"], example: "A flexible schedule can reduce stress."),
+        WordQuestion(word: "indicate", pronunciation: "/in-di-kayt/", correctMeaning: "表明", options: ["表明", "吸收", "放弃"], example: "The results indicate that practice is useful."),
+        WordQuestion(word: "influence", pronunciation: "/in-floo-uhns/", correctMeaning: "影响", options: ["影响", "实现", "接近"], example: "Good habits influence a student's future."),
+        WordQuestion(word: "opportunity", pronunciation: "/op-er-too-nuh-tee/", correctMeaning: "机会", options: ["机会", "后果", "方法"], example: "Every mistake is an opportunity to learn."),
+        WordQuestion(word: "responsibility", pronunciation: "/ri-spon-suh-bil-uh-tee/", correctMeaning: "责任", options: ["责任", "经济", "通道"], example: "Learning is a responsibility we should take seriously.")
     ]
 
     private static let dayFormatter: DateFormatter = {
