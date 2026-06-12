@@ -150,6 +150,66 @@ final class CloudSyncManager: ObservableObject {
         let p_reading_minutes: Int
     }
 
+    struct RemoteSettings: Decodable {
+        let math_minutes: Int
+        let english_minutes: Int
+        let reading_minutes: Int
+        let game_minutes_per_task: Int
+        let math_note: String
+        let english_note: String
+        let reading_note: String
+    }
+
+    func fetchRemoteSettings(pairingCode: String) async -> RemoteSettings? {
+        let trimmedCode = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+
+        guard !trimmedCode.isEmpty else {
+            statusMessage = "Enter a pairing code before syncing settings."
+            return nil
+        }
+
+        guard let url = URL(string: "\(supabaseUrl)/rest/v1/rpc/get_kiddaily_settings_by_pairing_code") else {
+            statusMessage = "Invalid Supabase URL."
+            return nil
+        }
+
+        do {
+            isUploading = true
+            statusMessage = "Syncing settings from web parent dashboard..."
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue(supabasePublishableKey, forHTTPHeaderField: "apikey")
+            request.setValue("Bearer \(supabasePublishableKey)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONEncoder().encode(["p_pairing_code": trimmedCode])
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+            guard (200...299).contains(statusCode) else {
+                statusMessage = "Settings sync failed. HTTP \(statusCode)."
+                isUploading = false
+                return nil
+            }
+
+            let settings = try JSONDecoder().decode([RemoteSettings].self, from: data)
+            isUploading = false
+
+            guard let firstSettings = settings.first else {
+                statusMessage = "No remote settings found for this pairing code."
+                return nil
+            }
+
+            statusMessage = "Remote settings synced."
+            return firstSettings
+        } catch {
+            isUploading = false
+            statusMessage = "Settings sync failed: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
     func uploadTodayRecord(
         pairingCode: String,
         reportDate: String,
@@ -984,6 +1044,15 @@ struct ContentView: View {
                 .textFieldStyle(.roundedBorder)
 
             Button {
+                syncSettingsFromWeb()
+            } label: {
+                Label("Sync Remote Settings", systemImage: "arrow.down.circle.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(cloudSyncManager.isUploading)
+
+            Button {
                 uploadTodayRecordToWeb()
             } label: {
                 Label(cloudSyncManager.isUploading ? "Uploading..." : "Upload Today's Record", systemImage: "arrow.up.doc.fill")
@@ -1016,6 +1085,23 @@ struct ContentView: View {
                 englishMinutes: englishMinutes,
                 readingMinutes: readingMinutes
             )
+        }
+    }
+
+    private func syncSettingsFromWeb() {
+        Task {
+            guard let settings = await cloudSyncManager.fetchRemoteSettings(pairingCode: webPairingCode) else {
+                return
+            }
+
+            mathMinutes = settings.math_minutes
+            englishMinutes = settings.english_minutes
+            readingMinutes = settings.reading_minutes
+            gameMinutesPerTask = settings.game_minutes_per_task
+            mathNote = settings.math_note
+            englishNote = settings.english_note
+            readingNote = settings.reading_note
+            updateTodayProgress()
         }
     }
 

@@ -89,3 +89,5 @@ Then replace `iPhone 15` with one of the listed simulator names.
 - Web parent dashboard can generate a pairing code for the selected child.
 - iOS Parent tab can enter that pairing code and upload today's record to Supabase.
 - Web parent dashboard can refresh iOS records from Supabase for remote monitoring.
+- Web parent dashboard can adjust task minutes and entertainment reward minutes remotely.
+- iOS Parent tab can sync those remote settings by pairing code.

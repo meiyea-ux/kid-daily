@@ -74,6 +74,42 @@
       </div>
     </section>
 
+    <section class="remote-settings-panel" aria-label="远程娱乐时间设置">
+      <div>
+        <span class="label">远程设置</span>
+        <h2>调整孩子 App 的任务和娱乐时间</h2>
+        <p>保存后，儿童 iOS App 在输入绑定码并同步设置时，会使用这里的任务时长和娱乐时间奖励规则。</p>
+      </div>
+      <div class="remote-settings-grid">
+        <label>
+          数学分钟
+          <input class="text-input" id="remote-math-minutes" type="number" min="5" max="120" step="5" value="20">
+        </label>
+        <label>
+          英语分钟
+          <input class="text-input" id="remote-english-minutes" type="number" min="5" max="120" step="5" value="20">
+        </label>
+        <label>
+          阅读分钟
+          <input class="text-input" id="remote-reading-minutes" type="number" min="5" max="120" step="5" value="15">
+        </label>
+        <label>
+          每任务奖励娱乐时间
+          <input class="text-input" id="remote-game-minutes" type="number" min="5" max="60" step="5" value="10">
+        </label>
+      </div>
+      <div class="remote-settings-grid">
+        <input class="text-input" id="remote-math-note" type="text" value="Practice number skills" aria-label="数学备注">
+        <input class="text-input" id="remote-english-note" type="text" value="Learn words and sentences" aria-label="英语备注">
+        <input class="text-input" id="remote-reading-note" type="text" value="Read a story or book" aria-label="阅读备注">
+      </div>
+      <div class="remote-sync-actions">
+        <button class="secondary-button" type="button" id="load-remote-settings-button">读取远程设置</button>
+        <button class="save-button" type="button" id="save-remote-settings-button">保存远程设置</button>
+      </div>
+      <p id="remote-settings-status">请先登录并选择孩子。</p>
+    </section>
+
     <section class="reminder-panel" aria-label="每日提醒">
       <div>
         <span class="label">每日提醒</span>

@@ -376,6 +376,49 @@ a {
   letter-spacing: 0.16em;
 }
 
+.remote-settings-panel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid #dcfce7;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 38px rgba(22, 163, 74, 0.08);
+}
+
+.remote-settings-panel h2,
+.remote-settings-panel p {
+  margin: 0;
+}
+
+.remote-settings-panel p {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.remote-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.remote-settings-grid label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+#remote-settings-status {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .reminder-panel {
   display: grid;
   grid-template-columns: 1fr auto auto;
@@ -1467,6 +1510,7 @@ a {
   .overview-panel,
   .auth-panel,
   .remote-sync-panel,
+  .remote-settings-grid,
   .reminder-panel,
   .daily-conclusion-card,
   .import-panel,

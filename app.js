@@ -422,6 +422,90 @@ async function refreshIosRecordsFromProductTables() {
   }
 }
 
+function readRemoteSettingsForm() {
+  return {
+    math_minutes: Number(document.getElementById("remote-math-minutes").value) || 20,
+    english_minutes: Number(document.getElementById("remote-english-minutes").value) || 20,
+    reading_minutes: Number(document.getElementById("remote-reading-minutes").value) || 15,
+    game_minutes_per_task: Number(document.getElementById("remote-game-minutes").value) || 10,
+    math_note: document.getElementById("remote-math-note").value.trim() || "Practice number skills",
+    english_note: document.getElementById("remote-english-note").value.trim() || "Learn words and sentences",
+    reading_note: document.getElementById("remote-reading-note").value.trim() || "Read a story or book"
+  };
+}
+
+function fillRemoteSettingsForm(settings) {
+  document.getElementById("remote-math-minutes").value = settings.math_minutes ?? 20;
+  document.getElementById("remote-english-minutes").value = settings.english_minutes ?? 20;
+  document.getElementById("remote-reading-minutes").value = settings.reading_minutes ?? 15;
+  document.getElementById("remote-game-minutes").value = settings.game_minutes_per_task ?? 10;
+  document.getElementById("remote-math-note").value = settings.math_note || "Practice number skills";
+  document.getElementById("remote-english-note").value = settings.english_note || "Learn words and sentences";
+  document.getElementById("remote-reading-note").value = settings.reading_note || "Read a story or book";
+}
+
+async function loadRemoteSettingsForSelectedChild() {
+  if (!supabaseClient || !currentUser) {
+    setText("remote-settings-status", "请先登录家长账号。");
+    return;
+  }
+
+  setText("remote-settings-status", "正在读取远程设置...");
+
+  try {
+    const childId = await getSelectedChildIdForRemoteSync();
+    const { data, error } = await supabaseClient
+      .from("child_remote_settings")
+      .select("*")
+      .eq("child_id", childId)
+      .eq("parent_user_id", currentUser.id)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (data) {
+      fillRemoteSettingsForm(data);
+      setText("remote-settings-status", "已读取远程设置。");
+      return;
+    }
+
+    setText("remote-settings-status", "还没有远程设置，当前显示默认值。");
+  } catch (error) {
+    setText("remote-settings-status", `读取失败：${error.message}`);
+  }
+}
+
+async function saveRemoteSettingsForSelectedChild() {
+  if (!supabaseClient || !currentUser) {
+    setText("remote-settings-status", "请先登录家长账号。");
+    return;
+  }
+
+  setText("remote-settings-status", "正在保存远程设置...");
+
+  try {
+    const childId = await getSelectedChildIdForRemoteSync();
+    const settings = readRemoteSettingsForm();
+    const { error } = await supabaseClient
+      .from("child_remote_settings")
+      .upsert({
+        child_id: childId,
+        parent_user_id: currentUser.id,
+        ...settings
+      }, { onConflict: "child_id" });
+
+    if (error) {
+      throw error;
+    }
+
+    setText("remote-settings-status", "已保存远程设置。儿童 App 同步后会使用新的娱乐时间规则。");
+  } catch (error) {
+    setText("remote-settings-status", `保存失败：${error.message}`);
+  }
+}
+
 async function loadReportsFromCloud(user) {
   if (!supabaseClient || !user) {
     return;
@@ -1193,6 +1277,8 @@ document.getElementById("sign-out-button").addEventListener("click", signOut);
 document.getElementById("save-reminder-button").addEventListener("click", saveReminder);
 document.getElementById("generate-pairing-code-button").addEventListener("click", generatePairingCodeForSelectedChild);
 document.getElementById("refresh-ios-records-button").addEventListener("click", refreshIosRecordsFromProductTables);
+document.getElementById("load-remote-settings-button").addEventListener("click", loadRemoteSettingsForSelectedChild);
+document.getElementById("save-remote-settings-button").addEventListener("click", saveRemoteSettingsForSelectedChild);
 
 renderWeeklyChart();
 renderWeeklyStats();

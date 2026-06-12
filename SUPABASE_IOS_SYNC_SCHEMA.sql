@@ -14,7 +14,24 @@ on public.child_pairing_codes(pairing_code);
 create index if not exists child_pairing_codes_parent_idx
 on public.child_pairing_codes(parent_user_id, created_at desc);
 
+create table if not exists public.child_remote_settings (
+  child_id uuid primary key references public.children(id) on delete cascade,
+  parent_user_id uuid not null references auth.users(id) on delete cascade,
+  math_minutes integer not null default 20,
+  english_minutes integer not null default 20,
+  reading_minutes integer not null default 15,
+  game_minutes_per_task integer not null default 10,
+  math_note text not null default 'Practice number skills',
+  english_note text not null default 'Learn words and sentences',
+  reading_note text not null default 'Read a story or book',
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists child_remote_settings_parent_idx
+on public.child_remote_settings(parent_user_id);
+
 alter table public.child_pairing_codes enable row level security;
+alter table public.child_remote_settings enable row level security;
 
 drop policy if exists "Parents can read own pairing codes" on public.child_pairing_codes;
 create policy "Parents can read own pairing codes"
@@ -37,6 +54,62 @@ for update
 to authenticated
 using (auth.uid() = parent_user_id)
 with check (auth.uid() = parent_user_id);
+
+drop policy if exists "Parents can read own remote settings" on public.child_remote_settings;
+create policy "Parents can read own remote settings"
+on public.child_remote_settings
+for select
+to authenticated
+using (auth.uid() = parent_user_id);
+
+drop policy if exists "Parents can insert own remote settings" on public.child_remote_settings;
+create policy "Parents can insert own remote settings"
+on public.child_remote_settings
+for insert
+to authenticated
+with check (auth.uid() = parent_user_id);
+
+drop policy if exists "Parents can update own remote settings" on public.child_remote_settings;
+create policy "Parents can update own remote settings"
+on public.child_remote_settings
+for update
+to authenticated
+using (auth.uid() = parent_user_id)
+with check (auth.uid() = parent_user_id);
+
+create or replace function public.get_kiddaily_settings_by_pairing_code(p_pairing_code text)
+returns table (
+  math_minutes integer,
+  english_minutes integer,
+  reading_minutes integer,
+  game_minutes_per_task integer,
+  math_note text,
+  english_note text,
+  reading_note text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    coalesce(settings.math_minutes, 20),
+    coalesce(settings.english_minutes, 20),
+    coalesce(settings.reading_minutes, 15),
+    coalesce(settings.game_minutes_per_task, 10),
+    coalesce(settings.math_note, 'Practice number skills'),
+    coalesce(settings.english_note, 'Learn words and sentences'),
+    coalesce(settings.reading_note, 'Read a story or book')
+  from public.child_pairing_codes codes
+  left join public.child_remote_settings settings
+    on settings.child_id = codes.child_id
+  where codes.pairing_code = upper(trim(p_pairing_code))
+    and codes.expires_at > now()
+  order by codes.created_at desc
+  limit 1;
+end;
+$$;
 
 create or replace function public.upload_kiddaily_record_by_pairing_code(
   p_pairing_code text,
@@ -135,3 +208,5 @@ grant execute on function public.upload_kiddaily_record_by_pairing_code(
   integer,
   integer
 ) to anon, authenticated;
+
+grant execute on function public.get_kiddaily_settings_by_pairing_code(text) to anon, authenticated;
