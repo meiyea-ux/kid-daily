@@ -265,6 +265,163 @@ async function syncReportsToProductTables() {
   }
 }
 
+function createPairingCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+
+  for (let index = 0; index < 6; index += 1) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+
+  return code;
+}
+
+async function getSelectedChildIdForRemoteSync() {
+  if (!currentUser) {
+    throw new Error("请先登录家长账号。");
+  }
+
+  const report = getActiveReport();
+
+  if (!report) {
+    throw new Error("请先选择一个孩子。");
+  }
+
+  return findOrCreateChild(report);
+}
+
+async function generatePairingCodeForSelectedChild() {
+  if (!supabaseClient || !currentUser) {
+    setText("pairing-code-helper", "请先登录家长账号。");
+    return;
+  }
+
+  setText("pairing-code-helper", "正在生成绑定码...");
+
+  try {
+    const childId = await getSelectedChildIdForRemoteSync();
+    const pairingCode = createPairingCode();
+    const { error } = await supabaseClient
+      .from("child_pairing_codes")
+      .insert({
+        child_id: childId,
+        parent_user_id: currentUser.id,
+        pairing_code: pairingCode
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    setText("pairing-code-value", pairingCode);
+    setText("pairing-code-helper", "绑定码 30 分钟内有效。请在儿童 iOS App 中输入。");
+  } catch (error) {
+    setText("pairing-code-helper", `生成失败：${error.message}`);
+  }
+}
+
+function mapProductRowsToReports(children, reports, usageRows) {
+  const childById = new Map(children.map((child) => [child.id, child]));
+  const usageByReportId = new Map();
+
+  usageRows.forEach((usage) => {
+    const list = usageByReportId.get(usage.report_id) || [];
+    list.push(usage);
+    usageByReportId.set(usage.report_id, list);
+  });
+
+  return reports.map((report) => {
+    const child = childById.get(report.child_id);
+    const appUsage = (usageByReportId.get(report.id) || []).map((usage) => ({
+      appName: usage.app_name,
+      category: usage.category,
+      minutes: usage.minutes,
+      startTime: usage.start_time,
+      endTime: usage.end_time
+    }));
+
+    return {
+      name: child?.name || "KidDaily",
+      date: report.report_date,
+      totalMinutes: report.total_minutes,
+      learningMinutes: report.learning_minutes,
+      entertainmentMinutes: report.entertainment_minutes,
+      readingMinutes: report.reading_minutes,
+      appUsage,
+      topApps: appUsage.slice(0, 3).map((app) => app.appName),
+      trends: {
+        learning: "+0%",
+        entertainment: "+0%"
+      },
+      growthScore: report.growth_score,
+      rating: report.rating,
+      aiComment: report.ai_comment
+    };
+  });
+}
+
+async function refreshIosRecordsFromProductTables() {
+  if (!supabaseClient || !currentUser) {
+    setText("save-status", "请先登录家长账号。");
+    return;
+  }
+
+  setText("save-status", "正在读取 iOS App 同步记录...");
+
+  try {
+    const { data: children, error: childrenError } = await supabaseClient
+      .from("children")
+      .select("id, name")
+      .eq("parent_user_id", currentUser.id);
+
+    if (childrenError) {
+      throw childrenError;
+    }
+
+    const { data: reports, error: reportsError } = await supabaseClient
+      .from("daily_reports")
+      .select("*")
+      .eq("parent_user_id", currentUser.id)
+      .order("report_date", { ascending: false });
+
+    if (reportsError) {
+      throw reportsError;
+    }
+
+    const reportIds = (reports || []).map((report) => report.id);
+    let usageRows = [];
+
+    if (reportIds.length > 0) {
+      const { data: usage, error: usageError } = await supabaseClient
+        .from("app_usage")
+        .select("*")
+        .in("report_id", reportIds);
+
+      if (usageError) {
+        throw usageError;
+      }
+
+      usageRows = usage || [];
+    }
+
+    const remoteReports = mapProductRowsToReports(children || [], reports || [], usageRows);
+
+    if (remoteReports.length === 0) {
+      setText("save-status", "还没有 iOS App 同步记录。");
+      return;
+    }
+
+    dailyReports = remoteReports;
+    localStorage.setItem(reportsStorageKey, JSON.stringify(dailyReports));
+    localStorage.setItem(selectedChildStorageKey, "0");
+    renderChildButtons(0);
+    showReport(0);
+    setText("save-status", `已刷新 ${remoteReports.length} 条 iOS 同步记录。`);
+  } catch (error) {
+    setText("save-status", `刷新失败：${error.message}`);
+  }
+}
+
 async function loadReportsFromCloud(user) {
   if (!supabaseClient || !user) {
     return;
@@ -1034,6 +1191,8 @@ document.getElementById("sign-up-button").addEventListener("click", signUp);
 document.getElementById("sign-in-button").addEventListener("click", signIn);
 document.getElementById("sign-out-button").addEventListener("click", signOut);
 document.getElementById("save-reminder-button").addEventListener("click", saveReminder);
+document.getElementById("generate-pairing-code-button").addEventListener("click", generatePairingCodeForSelectedChild);
+document.getElementById("refresh-ios-records-button").addEventListener("click", refreshIosRecordsFromProductTables);
 
 renderWeeklyChart();
 renderWeeklyStats();

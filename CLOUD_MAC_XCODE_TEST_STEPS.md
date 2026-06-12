@@ -86,3 +86,6 @@ Then replace `iPhone 15` with one of the listed simulator names.
   - `FamilyActivityPicker` opens system app/category selection.
   - `ManagedSettingsStore` applies or clears shields for selected apps/categories/domains.
 - Detailed usage reports still require adding a separate Device Activity Report extension target.
+- Web parent dashboard can generate a pairing code for the selected child.
+- iOS Parent tab can enter that pairing code and upload today's record to Supabase.
+- Web parent dashboard can refresh iOS records from Supabase for remote monitoring.

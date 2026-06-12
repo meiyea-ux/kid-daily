@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 import Combine
 
 #if canImport(FamilyControls)
@@ -125,6 +126,91 @@ final class ScreenTimeManager: ObservableObject {
         #else
         statusMessage = "ManagedSettings is unavailable in this build."
         #endif
+    }
+}
+
+@MainActor
+final class CloudSyncManager: ObservableObject {
+    @Published var statusMessage = "Enter the pairing code from the parent web dashboard."
+    @Published var isUploading = false
+
+    private let supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co"
+    private let supabasePublishableKey = "sb_publishable_ZpSnxUTDfmVnu0MMGbcjOw_b_icH-Jl"
+
+    struct UploadPayload: Encodable {
+        let p_pairing_code: String
+        let p_report_date: String
+        let p_math_completed: Bool
+        let p_english_completed: Bool
+        let p_reading_completed: Bool
+        let p_completed_count: Int
+        let p_game_time_minutes: Int
+        let p_learning_minutes: Int
+        let p_entertainment_minutes: Int
+        let p_reading_minutes: Int
+    }
+
+    func uploadTodayRecord(
+        pairingCode: String,
+        reportDate: String,
+        mathCompleted: Bool,
+        englishCompleted: Bool,
+        readingCompleted: Bool,
+        completedCount: Int,
+        gameTimeMinutes: Int,
+        mathMinutes: Int,
+        englishMinutes: Int,
+        readingMinutes: Int
+    ) async {
+        let trimmedCode = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+
+        guard !trimmedCode.isEmpty else {
+            statusMessage = "Enter a pairing code before uploading."
+            return
+        }
+
+        guard let url = URL(string: "\(supabaseUrl)/rest/v1/rpc/upload_kiddaily_record_by_pairing_code") else {
+            statusMessage = "Invalid Supabase URL."
+            return
+        }
+
+        let payload = UploadPayload(
+            p_pairing_code: trimmedCode,
+            p_report_date: reportDate,
+            p_math_completed: mathCompleted,
+            p_english_completed: englishCompleted,
+            p_reading_completed: readingCompleted,
+            p_completed_count: completedCount,
+            p_game_time_minutes: gameTimeMinutes,
+            p_learning_minutes: (mathCompleted ? mathMinutes : 0) + (englishCompleted ? englishMinutes : 0),
+            p_entertainment_minutes: gameTimeMinutes,
+            p_reading_minutes: readingCompleted ? readingMinutes : 0
+        )
+
+        do {
+            isUploading = true
+            statusMessage = "Uploading today's record..."
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue(supabasePublishableKey, forHTTPHeaderField: "apikey")
+            request.setValue("Bearer \(supabasePublishableKey)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONEncoder().encode(payload)
+
+            let (_, response) = try await URLSession.shared.data(for: request)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+            if (200...299).contains(statusCode) {
+                statusMessage = "Uploaded to parent web dashboard."
+            } else {
+                statusMessage = "Upload failed. HTTP \(statusCode). Check pairing code and Supabase SQL."
+            }
+        } catch {
+            statusMessage = "Upload failed: \(error.localizedDescription)"
+        }
+
+        isUploading = false
     }
 }
 
@@ -385,6 +471,7 @@ struct ScreenTimeSetupStep: View {
 
 struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager()
+    @StateObject private var cloudSyncManager = CloudSyncManager()
 
     @AppStorage("mathCompleted") private var mathCompleted = false
     @AppStorage("englishCompleted") private var englishCompleted = false
@@ -400,6 +487,7 @@ struct ContentView: View {
     @AppStorage("mathNote") private var mathNote = "Practice number skills"
     @AppStorage("englishNote") private var englishNote = "Learn words and sentences"
     @AppStorage("readingNote") private var readingNote = "Read a story or book"
+    @AppStorage("webPairingCode") private var webPairingCode = ""
 
     @State private var parentPINInput = ""
     @State private var newParentPIN = ""
@@ -597,6 +685,7 @@ struct ContentView: View {
 
             parentControlCard
             screenTimeSetupCard
+            cloudSyncCard
             childProfileCard
             parentTaskSettingsCard
             parentRewardSettingsCard
@@ -875,6 +964,61 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
+    private var cloudSyncCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "icloud.and.arrow.up.fill")
+                    .foregroundStyle(.blue)
+
+                Text("Web Parent Sync")
+                    .font(.headline)
+            }
+
+            Text("Enter the pairing code generated in the parent web dashboard. Today's learning and game time will upload for remote monitoring.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            TextField("Pairing code", text: $webPairingCode)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .textFieldStyle(.roundedBorder)
+
+            Button {
+                uploadTodayRecordToWeb()
+            } label: {
+                Label(cloudSyncManager.isUploading ? "Uploading..." : "Upload Today's Record", systemImage: "arrow.up.doc.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(cloudSyncManager.isUploading)
+
+            Text(cloudSyncManager.statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func uploadTodayRecordToWeb() {
+        Task {
+            await cloudSyncManager.uploadTodayRecord(
+                pairingCode: webPairingCode,
+                reportDate: todayKey,
+                mathCompleted: mathCompleted,
+                englishCompleted: englishCompleted,
+                readingCompleted: readingCompleted,
+                completedCount: completedCount,
+                gameTimeMinutes: gameTimeMinutes,
+                mathMinutes: mathMinutes,
+                englishMinutes: englishMinutes,
+                readingMinutes: readingMinutes
+            )
+        }
+    }
+
     private var childProfileCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -1070,6 +1214,10 @@ struct ContentView: View {
     private func updateTodayProgress() {
         saveTodayRecord()
         applyScreenTimeLimit()
+
+        if !webPairingCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            uploadTodayRecordToWeb()
+        }
     }
 
     private func applyScreenTimeLimit() {

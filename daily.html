@@ -57,6 +57,23 @@
       <p id="save-status">数据会保存在当前浏览器。</p>
     </section>
 
+    <section class="remote-sync-panel" aria-label="iOS App 远程同步">
+      <div>
+        <span class="label">iOS App 同步</span>
+        <h2>家长远程监控</h2>
+        <p>为当前孩子生成绑定码；儿童 iOS App 绑定后，家长可以在网页端刷新查看学习和娱乐时间。</p>
+      </div>
+      <div class="remote-sync-actions">
+        <button class="secondary-button" type="button" id="generate-pairing-code-button">生成绑定码</button>
+        <button class="secondary-button" type="button" id="refresh-ios-records-button">刷新 iOS 记录</button>
+      </div>
+      <div class="pairing-code-box" id="pairing-code-box">
+        <span>绑定码</span>
+        <strong id="pairing-code-value">------</strong>
+        <em id="pairing-code-helper">请先登录并选择孩子。</em>
+      </div>
+    </section>
+
     <section class="reminder-panel" aria-label="每日提醒">
       <div>
         <span class="label">每日提醒</span>
