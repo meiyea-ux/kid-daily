@@ -434,11 +434,28 @@ a {
   padding: 28px 20px 56px;
 }
 
+.groups-page {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 28px 20px 56px;
+}
+
 .teacher-content.locked {
   display: none;
 }
 
+.groups-content.locked {
+  display: none;
+}
+
 .teacher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.groups-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
@@ -456,18 +473,39 @@ a {
   box-shadow: 0 18px 38px rgba(37, 99, 235, 0.08);
 }
 
+.group-card {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid #dcfce7;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 38px rgba(22, 163, 74, 0.08);
+}
+
 .teacher-card h2,
-.teacher-card p {
+.teacher-card p,
+.group-card h2,
+.group-card p {
   margin: 0;
 }
 
-.teacher-card p {
+.teacher-card p,
+.group-card p {
   color: #64748b;
   font-size: 14px;
   line-height: 1.5;
 }
 
 .teacher-section-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.group-section-header {
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -505,9 +543,43 @@ a {
   gap: 12px;
 }
 
+.group-list,
+.leaderboard-list {
+  display: grid;
+  gap: 12px;
+}
+
 .teacher-list-item {
   display: grid;
   grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.group-list-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.group-list-item.active {
+  border-color: #22c55e;
+  background: #ecfdf5;
+}
+
+.leaderboard-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: 14px;
   align-items: center;
   padding: 14px;
@@ -522,14 +594,38 @@ a {
   font-size: 18px;
 }
 
+.group-list-item strong,
+.leaderboard-item strong {
+  display: block;
+  color: #172033;
+  font-size: 18px;
+}
+
+.rank-badge {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #22c55e;
+  color: #ffffff;
+  font-weight: 1000;
+}
+
 .teacher-code,
-.assignment-meta {
+.assignment-meta,
+.leaderboard-score {
   display: grid;
   gap: 5px;
   justify-items: end;
   color: #64748b;
   font-size: 12px;
   font-weight: 800;
+}
+
+.leaderboard-score b {
+  color: #16a34a;
+  font-size: 28px;
 }
 
 .teacher-code b {
@@ -1661,8 +1757,11 @@ a {
   .remote-sync-panel,
   .remote-settings-grid,
   .teacher-grid,
+  .groups-grid,
   .teacher-assignment-form,
   .teacher-list-item,
+  .group-list-item,
+  .leaderboard-item,
   .reminder-panel,
   .daily-conclusion-card,
   .import-panel,
@@ -1709,12 +1808,17 @@ a {
     display: grid;
   }
 
+  .group-section-header {
+    display: grid;
+  }
+
   .compact-select {
     max-width: none;
   }
 
   .teacher-code,
-  .assignment-meta {
+  .assignment-meta,
+  .leaderboard-score {
     justify-items: start;
   }
 

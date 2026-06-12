@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
+  <title>群组竞争 - Kid Daily</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="groups-page">
+    <header class="page-header">
+      <a class="back-link" href="index.html">返回首页</a>
+      <div class="brand-badge small">KD</div>
+      <p class="tagline">Family & School Groups</p>
+      <h1>群组竞争</h1>
+      <p class="page-subtitle">创建家庭群或学校群，让成员看到彼此学习、阅读和娱乐控制成绩，形成健康竞争。</p>
+    </header>
+
+    <section class="auth-panel" id="group-auth-panel" aria-label="群组账号登录">
+      <div class="auth-copy">
+        <span class="label">群组账号</span>
+        <h2>登录后进入家庭群 / 学校群</h2>
+        <p id="group-auth-message">使用家长或老师邮箱登录。第一次使用可先注册账号。</p>
+      </div>
+      <div class="auth-form" id="group-auth-form">
+        <input class="auth-input" id="group-email" type="email" placeholder="邮箱">
+        <input class="auth-input" id="group-password" type="password" placeholder="密码，至少 6 位">
+        <button class="save-button" type="button" id="group-sign-in-button">登录</button>
+        <button class="secondary-button" type="button" id="group-sign-up-button">注册</button>
+      </div>
+      <div class="auth-user" id="group-auth-user">
+        <span>当前账号</span>
+        <strong id="group-user-email"></strong>
+        <button class="secondary-button" type="button" id="group-sign-out-button">退出登录</button>
+      </div>
+    </section>
+
+    <div class="groups-content locked" id="groups-content">
+      <section class="groups-grid">
+        <article class="group-card">
+          <span class="label">创建群组</span>
+          <h2>家庭群 / 学校群</h2>
+          <input class="text-input" id="new-group-name" type="text" placeholder="群组名称，例如：高一 3 班挑战群">
+          <select class="text-input" id="new-group-type">
+            <option value="family">家庭群</option>
+            <option value="school">学校群</option>
+          </select>
+          <textarea class="text-input" id="new-group-description" rows="3" placeholder="群组说明，可选"></textarea>
+          <button class="save-button" type="button" id="create-group-button">创建群组</button>
+          <p id="create-group-status">创建后会生成群码，可邀请家庭成员或同学加入。</p>
+        </article>
+
+        <article class="group-card">
+          <span class="label">加入群组</span>
+          <h2>用群码加入竞争</h2>
+          <input class="text-input" id="join-group-code" type="text" placeholder="输入群码，例如 KDAB12CD">
+          <select class="text-input" id="member-child-select"></select>
+          <input class="text-input" id="member-display-name" type="text" placeholder="排行榜显示名，例如 Leo">
+          <button class="save-button" type="button" id="join-group-button">加入群组</button>
+          <p id="join-group-status">加入时可选择一个孩子作为参赛成员。</p>
+        </article>
+      </section>
+
+      <section class="group-card">
+        <div class="group-section-header">
+          <div>
+            <span class="label">我的群组</span>
+            <h2>选择一个群查看排行榜</h2>
+          </div>
+          <button class="secondary-button" type="button" id="refresh-groups-button">刷新</button>
+        </div>
+        <div class="group-list" id="group-list"></div>
+      </section>
+
+      <section class="group-card">
+        <div class="group-section-header">
+          <div>
+            <span class="label">排行榜</span>
+            <h2 id="leaderboard-title">请选择群组</h2>
+          </div>
+          <p id="leaderboard-status">显示最近 7 天平均成长评分和学习分钟。</p>
+        </div>
+        <div class="leaderboard-list" id="leaderboard-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="groups.js"></script>
+</body>
+</html>
