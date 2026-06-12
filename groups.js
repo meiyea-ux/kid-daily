@@ -26,10 +26,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function groupTypeLabel(type) {
-  return type === "school" ? "学校群" : "家庭群";
-}
-
 function randomGroupCode() {
   return `KD${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
@@ -77,7 +73,7 @@ async function signIn() {
 
   currentUser = data.user;
   renderAuthState();
-  setText("group-auth-message", "已登录群组账号。");
+  setText("group-auth-message", "已登录家庭群账号。");
   await loadAllGroupData();
 }
 
@@ -135,11 +131,10 @@ async function createGroup() {
   }
 
   const groupName = document.getElementById("new-group-name").value.trim();
-  const groupType = document.getElementById("new-group-type").value;
   const description = document.getElementById("new-group-description").value.trim();
 
   if (!groupName) {
-    setText("create-group-status", "请输入群组名称。");
+    setText("create-group-status", "请输入家庭群名称。");
     return;
   }
 
@@ -149,7 +144,7 @@ async function createGroup() {
     .insert({
       owner_user_id: currentUser.id,
       group_name: groupName,
-      group_type: groupType,
+      group_type: "family",
       group_code: groupCode,
       description
     })
@@ -173,7 +168,7 @@ async function createGroup() {
 
   document.getElementById("new-group-name").value = "";
   document.getElementById("new-group-description").value = "";
-  setText("create-group-status", `群组已创建，群码：${groupCode}`);
+  setText("create-group-status", `家庭群已创建，群码：${groupCode}`);
   await loadGroups();
 }
 
@@ -205,7 +200,7 @@ async function joinGroup() {
   }
 
   document.getElementById("join-group-code").value = "";
-  setText("join-group-status", "已加入群组。");
+  setText("join-group-status", "已加入家庭群。");
   await loadGroups();
 }
 
@@ -216,10 +211,11 @@ async function loadGroups() {
     .from("kiddaily_group_members")
     .select("id, role, display_name, child_id, kiddaily_groups(id, group_name, group_type, group_code, description)")
     .eq("member_user_id", currentUser.id)
+    .eq("kiddaily_groups.group_type", "family")
     .order("created_at", { ascending: false });
 
   if (error) {
-    setText("leaderboard-status", `读取群组失败：${error.message}`);
+    setText("leaderboard-status", `读取家庭群失败：${error.message}`);
     return;
   }
 
@@ -233,7 +229,7 @@ async function loadGroups() {
       ...membership.kiddaily_groups
     }))
     .filter((group) => {
-      if (!group.id || seen.has(group.id)) return false;
+      if (!group.id || group.group_type !== "family" || seen.has(group.id)) return false;
       seen.add(group.id);
       return true;
     });
@@ -251,7 +247,7 @@ function renderGroups() {
   list.innerHTML = "";
 
   if (myGroups.length === 0) {
-    list.innerHTML = '<p class="empty-list">还没有群组。你可以创建一个，或用群码加入。</p>';
+    list.innerHTML = '<p class="empty-list">还没有家庭群。你可以创建一个，或用群码加入。</p>';
     return;
   }
 
@@ -260,11 +256,11 @@ function renderGroups() {
     item.className = `group-list-item${group.id === selectedGroupId ? " active" : ""}`;
     item.innerHTML = `
       <div>
-        <span class="assignment-type">${escapeHtml(groupTypeLabel(group.group_type))}</span>
+        <span class="group-type">家庭群</span>
         <strong>${escapeHtml(group.group_name)}</strong>
-        <p>${escapeHtml(group.description || "暂无群组说明")}</p>
+        <p>${escapeHtml(group.description || "暂无家庭群说明")}</p>
       </div>
-      <div class="teacher-code">
+      <div class="group-code">
         <span>群码</span>
         <b>${escapeHtml(group.group_code)}</b>
       </div>
@@ -280,7 +276,7 @@ function renderGroups() {
 
 async function loadLeaderboard(groupId) {
   const group = myGroups.find((item) => item.id === groupId);
-  setText("leaderboard-title", group ? `${group.group_name} 排行榜` : "群组排行榜");
+  setText("leaderboard-title", group ? `${group.group_name} 排行榜` : "家庭排行榜");
   setText("leaderboard-status", "正在读取最近 7 天成绩...");
 
   const { data, error } = await supabaseClient.rpc("get_kiddaily_group_leaderboard", {
@@ -293,7 +289,7 @@ async function loadLeaderboard(groupId) {
     return;
   }
 
-  setText("leaderboard-status", "最近 7 天平均成长评分。群组只展示排名分数和记录天数。");
+  setText("leaderboard-status", "最近 7 天平均成长评分。家庭群只展示排名分数和记录天数。");
   renderLeaderboard(data || []);
 }
 
@@ -331,7 +327,7 @@ async function loadAllGroupData() {
 
 async function restoreSession() {
   if (!supabaseClient) {
-    setText("group-auth-message", "Supabase 未加载，群组功能不可用。");
+    setText("group-auth-message", "Supabase 未加载，家庭群功能不可用。");
     return;
   }
 
