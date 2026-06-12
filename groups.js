@@ -293,7 +293,7 @@ async function loadLeaderboard(groupId) {
     return;
   }
 
-  setText("leaderboard-status", "最近 7 天平均成长评分、学习分钟和阅读分钟。");
+  setText("leaderboard-status", "最近 7 天平均成长评分。群组只展示排名分数和记录天数。");
   renderLeaderboard(data || []);
 }
 
@@ -313,7 +313,7 @@ function renderLeaderboard(rows) {
       <div class="rank-badge">${index + 1}</div>
       <div>
         <strong>${escapeHtml(row.display_name)}</strong>
-        <p>${row.report_days} 天记录 · 学习 ${row.learning_minutes} 分钟 · 阅读 ${row.reading_minutes} 分钟</p>
+        <p>${row.report_days} 天记录 · 最近 7 天成长评分排名</p>
       </div>
       <div class="leaderboard-score">
         <span>成长评分</span>

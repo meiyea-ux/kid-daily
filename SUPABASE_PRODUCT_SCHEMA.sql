@@ -335,6 +335,13 @@ for insert
 to authenticated
 with check (auth.uid() = parent_user_id);
 
+drop policy if exists "Parents can read own child assignment checkins" on public.teacher_assignment_checkins;
+create policy "Parents can read own child assignment checkins"
+on public.teacher_assignment_checkins
+for select
+to authenticated
+using (auth.uid() = parent_user_id);
+
 drop policy if exists "Group members can read accessible groups" on public.kiddaily_groups;
 create policy "Group members can read accessible groups"
 on public.kiddaily_groups
@@ -444,9 +451,6 @@ returns table (
   display_name text,
   child_id uuid,
   score integer,
-  learning_minutes integer,
-  reading_minutes integer,
-  entertainment_minutes integer,
   report_days integer
 )
 language plpgsql
@@ -474,17 +478,17 @@ begin
     members.display_name,
     members.child_id,
     coalesce(round(avg(reports.growth_score))::integer, 0) as score,
-    coalesce(sum(reports.learning_minutes)::integer, 0) as learning_minutes,
-    coalesce(sum(reports.reading_minutes)::integer, 0) as reading_minutes,
-    coalesce(sum(reports.entertainment_minutes)::integer, 0) as entertainment_minutes,
     count(reports.id)::integer as report_days
   from public.kiddaily_group_members members
+  left join public.children children
+    on children.id = members.child_id
   left join public.daily_reports reports
     on reports.child_id = members.child_id
+   and reports.parent_user_id = children.parent_user_id
    and reports.report_date >= current_date - interval '7 days'
   where members.group_id = p_group_id
   group by members.id, members.display_name, members.child_id
-  order by score desc, learning_minutes desc, reading_minutes desc;
+  order by score desc, report_days desc;
 end;
 $$;
 

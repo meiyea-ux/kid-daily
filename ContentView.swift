@@ -92,7 +92,7 @@ final class ScreenTimeManager: ObservableObject {
         #if canImport(FamilyControls)
         statusMessage = "Requesting Screen Time permission..."
         do {
-            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+            try await AuthorizationCenter.shared.requestAuthorization(for: .child)
             refreshAuthorizationState()
         } catch {
             authorizationState = .denied
@@ -327,6 +327,7 @@ final class SpeechRecitationManager: NSObject, ObservableObject {
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var autoStopTask: Task<Void, Never>?
     #endif
 
     func startRecording() async {
@@ -347,6 +348,9 @@ final class SpeechRecitationManager: NSObject, ObservableObject {
 
     func stopRecording() {
         #if canImport(Speech) && canImport(AVFoundation)
+        autoStopTask?.cancel()
+        autoStopTask = nil
+
         if audioEngine.isRunning {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
@@ -420,6 +424,15 @@ final class SpeechRecitationManager: NSObject, ObservableObject {
         try audioEngine.start()
         isRecording = true
         statusMessage = "Listening. Recite the sentence clearly."
+        autoStopTask?.cancel()
+        autoStopTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 60_000_000_000)
+            await MainActor.run {
+                guard let self, self.isRecording else { return }
+                self.statusMessage = "Recording reached 60 seconds and stopped automatically."
+                self.stopRecording()
+            }
+        }
 
         recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
             Task { @MainActor in
@@ -1515,10 +1528,6 @@ struct ContentView: View {
             }
             .buttonStyle(.borderedProminent)
 
-            Text("Default PIN: 1234")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
             Spacer(minLength: 20)
         }
         .padding()
@@ -1834,18 +1843,31 @@ struct ContentView: View {
     }
 
     private func uploadTodayRecordToWeb() {
+        let snapshot = (
+            pairingCode: webPairingCode,
+            reportDate: todayKey,
+            mathCompleted: mathCompleted,
+            englishCompleted: englishCompleted,
+            readingCompleted: readingCompleted,
+            completedCount: completedCount,
+            gameTimeMinutes: gameTimeMinutes,
+            mathMinutes: mathMinutes,
+            englishMinutes: englishMinutes,
+            readingMinutes: readingMinutes
+        )
+
         Task {
             await cloudSyncManager.uploadTodayRecord(
-                pairingCode: webPairingCode,
-                reportDate: todayKey,
-                mathCompleted: mathCompleted,
-                englishCompleted: englishCompleted,
-                readingCompleted: readingCompleted,
-                completedCount: completedCount,
-                gameTimeMinutes: gameTimeMinutes,
-                mathMinutes: mathMinutes,
-                englishMinutes: englishMinutes,
-                readingMinutes: readingMinutes
+                pairingCode: snapshot.pairingCode,
+                reportDate: snapshot.reportDate,
+                mathCompleted: snapshot.mathCompleted,
+                englishCompleted: snapshot.englishCompleted,
+                readingCompleted: snapshot.readingCompleted,
+                completedCount: snapshot.completedCount,
+                gameTimeMinutes: snapshot.gameTimeMinutes,
+                mathMinutes: snapshot.mathMinutes,
+                englishMinutes: snapshot.englishMinutes,
+                readingMinutes: snapshot.readingMinutes
             )
         }
     }

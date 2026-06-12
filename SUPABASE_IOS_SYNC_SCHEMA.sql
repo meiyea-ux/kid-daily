@@ -172,7 +172,7 @@ begin
     raise exception 'Invalid or expired pairing code';
   end if;
 
-  score := least(100, greatest(0, p_completed_count * 25 + case when p_game_time_minutes > 0 then 25 else 0 end));
+  score := least(100, greatest(0, p_completed_count * 34));
 
   if score >= 80 then
     rating_text := '优秀';
