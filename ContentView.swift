@@ -529,6 +529,15 @@ struct ScreenTimeSetupStep: View {
     }
 }
 
+struct WordQuestion: Identifiable {
+    let id = UUID()
+    let word: String
+    let pronunciation: String
+    let correctMeaning: String
+    let options: [String]
+    let example: String
+}
+
 struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager()
     @StateObject private var cloudSyncManager = CloudSyncManager()
@@ -553,6 +562,9 @@ struct ContentView: View {
     @State private var newParentPIN = ""
     @State private var isParentUnlocked = false
     @State private var parentPINError = ""
+    @State private var wordQuestionIndex = 0
+    @State private var wordCorrectCount = 0
+    @State private var wordFeedback = "Choose the correct meaning to pass each word gate."
 
     private let totalTaskCount = 3
 
@@ -601,6 +613,14 @@ struct ContentView: View {
         lastSevenRecords.filter { $0.isFullyCompleted }.count
     }
 
+    private var wordChallengeFinished: Bool {
+        wordQuestionIndex >= Self.wordQuestions.count
+    }
+
+    private var currentWordQuestion: WordQuestion {
+        Self.wordQuestions[min(wordQuestionIndex, Self.wordQuestions.count - 1)]
+    }
+
     var body: some View {
         TabView {
             NavigationStack {
@@ -611,6 +631,16 @@ struct ContentView: View {
             }
             .tabItem {
                 Label("Today", systemImage: "house.fill")
+            }
+
+            NavigationStack {
+                appBackground {
+                    wordChallengeView
+                }
+                .navigationTitle("Words")
+            }
+            .tabItem {
+                Label("Words", systemImage: "textformat.abc")
             }
 
             NavigationStack {
@@ -662,6 +692,134 @@ struct ContentView: View {
             resetButton
         }
         .padding()
+    }
+
+    private var wordChallengeView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Word Challenge")
+                    .font(.largeTitle)
+                    .bold()
+
+                Text("Pass today's word gates to complete the English task.")
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                StatCard(
+                    title: "Gate",
+                    value: "\(min(wordQuestionIndex + 1, Self.wordQuestions.count))",
+                    subtitle: "of \(Self.wordQuestions.count)",
+                    color: .purple,
+                    iconName: "flag.checkered"
+                )
+
+                StatCard(
+                    title: "Correct",
+                    value: "\(wordCorrectCount)",
+                    subtitle: "words",
+                    color: .green,
+                    iconName: "checkmark.seal.fill"
+                )
+            }
+
+            if wordChallengeFinished {
+                wordChallengeCompleteCard
+            } else {
+                wordQuestionCard
+            }
+
+            Text(wordFeedback)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Button {
+                resetWordChallenge()
+            } label: {
+                Label("Restart Word Challenge", systemImage: "arrow.counterclockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+    }
+
+    private var wordQuestionCard: some View {
+        let question = currentWordQuestion
+
+        return VStack(alignment: .leading, spacing: 16) {
+            Text("Word Gate \(wordQuestionIndex + 1)")
+                .font(.headline)
+                .foregroundStyle(.purple)
+
+            Text(question.word)
+                .font(.system(size: 48, weight: .bold, design: .rounded))
+
+            Text(question.pronunciation)
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            Text(question.example)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 10) {
+                ForEach(question.options, id: \.self) { option in
+                    Button {
+                        answerWord(option)
+                    } label: {
+                        HStack {
+                            Text(option)
+                                .font(.headline)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white.opacity(0.92))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [Color.purple.opacity(0.16), Color.blue.opacity(0.10), Color.white.opacity(0.92)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
+    }
+
+    private var wordChallengeCompleteCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: "trophy.fill")
+                .font(.largeTitle)
+                .foregroundStyle(.yellow)
+
+            Text("Challenge Complete")
+                .font(.title)
+                .bold()
+
+            Text("Score: \(wordCorrectCount) / \(Self.wordQuestions.count)")
+                .font(.headline)
+
+            Text("English task is now completed. Your earned game time has been updated.")
+                .foregroundStyle(.secondary)
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
     }
 
     private var recordsView: some View {
@@ -1269,6 +1427,31 @@ struct ContentView: View {
         .tint(.blue)
     }
 
+    private func answerWord(_ option: String) {
+        guard !wordChallengeFinished else { return }
+
+        let question = currentWordQuestion
+        if option == question.correctMeaning {
+            wordCorrectCount += 1
+            wordFeedback = "Correct. \(question.word) means \(question.correctMeaning)."
+        } else {
+            wordFeedback = "Good try. \(question.word) means \(question.correctMeaning)."
+        }
+
+        wordQuestionIndex += 1
+
+        if wordChallengeFinished {
+            englishCompleted = true
+            updateTodayProgress()
+        }
+    }
+
+    private func resetWordChallenge() {
+        wordQuestionIndex = 0
+        wordCorrectCount = 0
+        wordFeedback = "Choose the correct meaning to pass each word gate."
+    }
+
     private func appBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack {
             LinearGradient(
@@ -1294,6 +1477,7 @@ struct ContentView: View {
         mathCompleted = false
         englishCompleted = false
         readingCompleted = false
+        resetWordChallenge()
         lastSavedDateKey = todayKey
     }
 
@@ -1385,6 +1569,44 @@ struct ContentView: View {
 
         return streak
     }
+
+    private static let wordQuestions: [WordQuestion] = [
+        WordQuestion(
+            word: "brave",
+            pronunciation: "/breiv/",
+            correctMeaning: "not afraid",
+            options: ["not afraid", "very slow", "full of water"],
+            example: "She was brave during the storm."
+        ),
+        WordQuestion(
+            word: "garden",
+            pronunciation: "/gar-den/",
+            correctMeaning: "a place to grow plants",
+            options: ["a place to grow plants", "a small computer", "a loud sound"],
+            example: "Dad grows tomatoes in the garden."
+        ),
+        WordQuestion(
+            word: "quick",
+            pronunciation: "/kwik/",
+            correctMeaning: "fast",
+            options: ["cold", "fast", "quiet"],
+            example: "The quick runner won the race."
+        ),
+        WordQuestion(
+            word: "share",
+            pronunciation: "/shair/",
+            correctMeaning: "to use with others",
+            options: ["to sleep early", "to use with others", "to draw a line"],
+            example: "Please share your crayons."
+        ),
+        WordQuestion(
+            word: "bright",
+            pronunciation: "/brite/",
+            correctMeaning: "full of light",
+            options: ["full of light", "hard to carry", "very hungry"],
+            example: "The room is bright in the morning."
+        )
+    ]
 
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
