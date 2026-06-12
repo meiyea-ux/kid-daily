@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
+  <title>老师端后台 - Kid Daily</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="teacher-page">
+    <header class="page-header">
+      <a class="back-link" href="index.html">返回首页</a>
+      <div class="brand-badge small">KD</div>
+      <p class="tagline">Teacher Console</p>
+      <h1>老师端后台</h1>
+      <p class="page-subtitle">下发学习资料、体育锻炼任务和读书打卡要求，后续可同步到学生端和家长端。</p>
+    </header>
+
+    <section class="auth-panel" id="teacher-auth-panel" aria-label="老师账号登录">
+      <div class="auth-copy">
+        <span class="label">老师账号</span>
+        <h2 id="teacher-auth-title">登录后管理班级任务</h2>
+        <p id="teacher-auth-message">使用老师邮箱和密码登录。第一次使用可以先注册老师账号。</p>
+      </div>
+      <div class="auth-form" id="teacher-auth-form">
+        <input class="auth-input" id="teacher-email" type="email" placeholder="老师邮箱">
+        <input class="auth-input" id="teacher-password" type="password" placeholder="密码，至少 6 位">
+        <button class="save-button" type="button" id="teacher-sign-in-button">登录</button>
+        <button class="secondary-button" type="button" id="teacher-sign-up-button">注册</button>
+      </div>
+      <div class="auth-user" id="teacher-auth-user">
+        <span>当前老师账号</span>
+        <strong id="teacher-user-email"></strong>
+        <button class="secondary-button" type="button" id="teacher-sign-out-button">退出登录</button>
+      </div>
+    </section>
+
+    <div class="teacher-content locked" id="teacher-content">
+      <section class="teacher-grid">
+        <article class="teacher-card">
+          <span class="label">老师资料</span>
+          <h2>学校和老师姓名</h2>
+          <input class="text-input" id="teacher-display-name" type="text" placeholder="老师姓名">
+          <input class="text-input" id="teacher-school-name" type="text" placeholder="学校名称">
+          <button class="save-button" type="button" id="save-teacher-profile-button">保存老师资料</button>
+          <p id="teacher-profile-status">请先登录老师账号。</p>
+        </article>
+
+        <article class="teacher-card">
+          <span class="label">班级</span>
+          <h2>创建班级</h2>
+          <input class="text-input" id="teacher-class-name" type="text" placeholder="例如：高一 3 班">
+          <textarea class="text-input" id="teacher-class-description" rows="3" placeholder="班级说明，可选"></textarea>
+          <button class="save-button" type="button" id="create-class-button">创建班级</button>
+          <p id="teacher-class-status">创建后会生成班级码，后续学生/家长可用来加入。</p>
+        </article>
+      </section>
+
+      <section class="teacher-card">
+        <div class="teacher-section-header">
+          <div>
+            <span class="label">任务下发</span>
+            <h2>发布学习资料 / 体育锻炼 / 读书打卡</h2>
+          </div>
+          <select class="text-input compact-select" id="assignment-class-select"></select>
+        </div>
+
+        <div class="teacher-assignment-form">
+          <label>
+            任务类型
+            <select class="text-input" id="assignment-type">
+              <option value="study">学习资料</option>
+              <option value="exercise">体育锻炼</option>
+              <option value="reading">读书打卡</option>
+            </select>
+          </label>
+          <label>
+            目标分钟
+            <input class="text-input" id="assignment-minutes" type="number" min="5" max="180" step="5" value="20">
+          </label>
+          <label>
+            截止日期
+            <input class="text-input" id="assignment-due-date" type="date">
+          </label>
+        </div>
+
+        <input class="text-input" id="assignment-title" type="text" placeholder="任务标题，例如：背诵高考词汇句子 10 句">
+        <textarea class="text-input" id="assignment-description" rows="4" placeholder="任务要求，例如：朗读并背诵句子，完成后提交学习打卡。"></textarea>
+        <input class="text-input" id="assignment-resource-url" type="url" placeholder="资料链接，可选，例如文档、视频、音频 URL">
+
+        <label class="check-row">
+          <input id="assignment-requires-checkin" type="checkbox" checked>
+          要求学生打卡提交
+        </label>
+
+        <button class="save-button" type="button" id="publish-assignment-button">发布任务</button>
+        <p id="assignment-status">请选择班级并填写任务。</p>
+      </section>
+
+      <section class="teacher-card">
+        <div class="teacher-section-header">
+          <div>
+            <span class="label">班级列表</span>
+            <h2>我的班级</h2>
+          </div>
+          <button class="secondary-button" type="button" id="refresh-teacher-data-button">刷新</button>
+        </div>
+        <div class="teacher-list" id="teacher-class-list"></div>
+      </section>
+
+      <section class="teacher-card">
+        <span class="label">已发布任务</span>
+        <h2>任务后台</h2>
+        <div class="teacher-list" id="teacher-assignment-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="teacher.js"></script>
+</body>
+</html>
