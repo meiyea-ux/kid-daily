@@ -729,6 +729,7 @@ struct StatCard: View {
     let subtitle: String
     let color: Color
     let iconName: String
+    private let textColor = Color(red: 0.10, green: 0.14, blue: 0.22)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -743,6 +744,7 @@ struct StatCard: View {
 
             Text(value)
                 .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(textColor)
 
             Text(subtitle)
                 .font(.footnote)
@@ -750,9 +752,9 @@ struct StatCard: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.92))
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+        .shadow(color: .black.opacity(0.08), radius: 12, y: 6)
     }
 }
 
@@ -1457,6 +1459,7 @@ struct ContentView: View {
                 Text("Parent Dashboard")
                     .font(.largeTitle)
                     .bold()
+                    .foregroundStyle(Color(red: 0.10, green: 0.14, blue: 0.22))
 
                 Spacer()
 
@@ -1720,8 +1723,10 @@ struct ContentView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.9))
+        .foregroundStyle(Color(red: 0.10, green: 0.14, blue: 0.22))
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: .black.opacity(0.08), radius: 14, y: 7)
     }
 
     private var screenTimeSetupCard: some View {
@@ -2162,8 +2167,8 @@ struct ContentView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color.blue.opacity(0.18),
-                    Color.green.opacity(0.12),
+                    Color(red: 0.88, green: 0.95, blue: 1.0),
+                    Color(red: 0.91, green: 0.98, blue: 0.93),
                     Color.white
                 ],
                 startPoint: .topLeading,
@@ -2175,6 +2180,7 @@ struct ContentView: View {
                 content()
             }
         }
+        .preferredColorScheme(.light)
     }
 
     private func prepareToday() {
