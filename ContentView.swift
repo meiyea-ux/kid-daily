@@ -111,16 +111,24 @@ final class ScreenTimeManager: ObservableObject {
             return
         }
 
-        guard minutes > 0 else {
-            clearRestrictions()
-            statusMessage = "No earned game time yet. Selected apps are not shielded."
+        let hasSelection = !selection.applicationTokens.isEmpty ||
+            !selection.categoryTokens.isEmpty ||
+            !selection.webDomainTokens.isEmpty
+
+        guard hasSelection else {
+            statusMessage = "Select apps or categories before applying Screen Time limits."
             return
         }
 
         store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
         store.shield.applicationCategories = selection.categoryTokens.isEmpty ? nil : .specific(selection.categoryTokens)
         store.shield.webDomains = selection.webDomainTokens.isEmpty ? nil : selection.webDomainTokens
-        statusMessage = "Screen Time shield updated for selected apps and categories."
+
+        if minutes > 0 {
+            statusMessage = "Screen Time restrictions applied to selected apps. Earned limit: \(minutes) min."
+        } else {
+            statusMessage = "No earned game time. Selected apps and categories are now restricted."
+        }
     }
     #else
     func applyGameTimeLimit(minutes: Int) {
