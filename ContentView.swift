@@ -92,7 +92,7 @@ final class ScreenTimeManager: ObservableObject {
         #if canImport(FamilyControls)
         statusMessage = "Requesting Screen Time permission..."
         do {
-            try await AuthorizationCenter.shared.requestAuthorization(for: .child)
+            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
             refreshAuthorizationState()
         } catch {
             authorizationState = .denied
@@ -1733,7 +1733,7 @@ struct ContentView: View {
             ScreenTimeSetupStep(
                 number: 1,
                 title: "Request Permission",
-                description: "Ask the parent to approve FamilyControls access."
+                description: "Request Screen Time access on this iPhone."
             )
 
             ScreenTimeSetupStep(
