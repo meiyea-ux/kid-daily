@@ -1395,6 +1395,7 @@ struct ContentView: View {
     @State private var newParentPIN = ""
     @State private var isParentUnlocked = false
     @State private var parentPINError = ""
+    @State private var selectedTab = 0
 
     private let totalTaskCount = 3
 
@@ -1467,7 +1468,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 appBackground {
                     todayView
@@ -1477,6 +1478,7 @@ struct ContentView: View {
             .tabItem {
                 Label(AppText.t("tab_today"), systemImage: "house.fill")
             }
+            .tag(0)
 
             NavigationStack {
                 appBackground {
@@ -1487,6 +1489,7 @@ struct ContentView: View {
             .tabItem {
                 Label("Apps", systemImage: "app.badge.checkmark")
             }
+            .tag(1)
 
             NavigationStack {
                 appBackground {
@@ -1497,6 +1500,7 @@ struct ContentView: View {
             .tabItem {
                 Label(AppText.t("tab_move"), systemImage: "figure.walk")
             }
+            .tag(2)
 
             NavigationStack {
                 appBackground {
@@ -1507,6 +1511,7 @@ struct ContentView: View {
             .tabItem {
                 Label(AppText.t("tab_records"), systemImage: "calendar")
             }
+            .tag(3)
 
             NavigationStack {
                 appBackground {
@@ -1521,6 +1526,7 @@ struct ContentView: View {
             .tabItem {
                 Label(AppText.t("tab_parent"), systemImage: "person.2.fill")
             }
+            .tag(4)
         }
         .onAppear {
             prepareToday()
