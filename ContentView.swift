@@ -1835,7 +1835,7 @@ struct ContentView: View {
                 emptyRecordsView
             } else {
                 VStack(spacing: 10) {
-                    ForEach(dailyRecords) { record in
+                    ForEach(dailyRecords, id: \.dateKey) { record in
                         NavigationLink {
                             RecordDetailView(record: record)
                         } label: {
@@ -2582,12 +2582,18 @@ struct ContentView: View {
     }
 
     private func decodeRecords() -> [DailyRecord] {
-        guard let data = dailyRecordsData.data(using: .utf8),
-              let records = try? JSONDecoder().decode([DailyRecord].self, from: data) else {
+        guard let data = dailyRecordsData.data(using: .utf8) else {
             return []
         }
 
-        return records.sorted { $0.dateKey > $1.dateKey }
+        do {
+            let records: [DailyRecord] = try JSONDecoder().decode([DailyRecord].self, from: data)
+            return records.sorted { leftRecord, rightRecord in
+                leftRecord.dateKey > rightRecord.dateKey
+            }
+        } catch {
+            return []
+        }
     }
 
 
