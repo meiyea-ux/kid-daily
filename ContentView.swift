@@ -686,16 +686,7 @@ enum ScreenTimeAuthorizationState: String {
 
 extension ScreenTimeAuthorizationState {
     var localizedName: String {
-        let names: [String: [ScreenTimeAuthorizationState: String]] = [
-            "en": [.unavailable: "Unavailable", .notDetermined: "Not Determined", .denied: "Denied", .approved: "Approved"],
-            "zh-Hans": [.unavailable: "不可用", .notDetermined: "未决定", .denied: "已拒绝", .approved: "已批准"],
-            "zh-Hant": [.unavailable: "不可用", .notDetermined: "尚未決定", .denied: "已拒絕", .approved: "已批准"],
-            "ja": [.unavailable: "利用不可", .notDetermined: "未確認", .denied: "拒否", .approved: "承認済み"],
-            "ko": [.unavailable: "사용 불가", .notDetermined: "미결정", .denied: "거부됨", .approved: "승인됨"],
-            "es": [.unavailable: "No disponible", .notDetermined: "Sin determinar", .denied: "Denegado", .approved: "Aprobado"]
-        ]
-
-        return names[AppText.currentLanguageKey()]?[self] ?? names["en"]?[self] ?? rawValue
+        rawValue
     }
 }
 
@@ -1536,10 +1527,10 @@ struct ContentView: View {
             saveTodayRecord()
             screenTimeManager.refreshAuthorizationState()
         }
-        .onChange(of: mathCompleted) { _ in updateTodayProgress() }
-        .onChange(of: englishCompleted) { _ in updateTodayProgress() }
-        .onChange(of: readingCompleted) { _ in updateTodayProgress() }
-        .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
+        .onChange(of: mathCompleted) { _, _ in updateTodayProgress() }
+        .onChange(of: englishCompleted) { _, _ in updateTodayProgress() }
+        .onChange(of: readingCompleted) { _, _ in updateTodayProgress() }
+        .onChange(of: gameMinutesPerTask) { _, _ in updateTodayProgress() }
         #if canImport(FamilyControls)
         .familyActivityPicker(isPresented: $isLearningPickerPresented, selection: $learningActivitySelection)
         .familyActivityPicker(isPresented: $isEntertainmentPickerPresented, selection: $entertainmentActivitySelection)
@@ -1648,7 +1639,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text(AppText.t("authorization", screenTimeManager.authorizationState.displayText))
+            Text(AppText.t("authorization", screenTimeManager.authorizationState.localizedName))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2593,6 +2584,28 @@ struct ContentView: View {
         return records.sorted { $0.dateKey > $1.dateKey }
     }
 
+
+    private func streakCount(from records: [DailyRecord]) -> Int {
+        var streak = 0
+        var date = Calendar.current.startOfDay(for: Date())
+
+        while true {
+            let key = Self.dayFormatter.string(from: date)
+            guard records.first(where: { $0.dateKey == key })?.isFullyCompleted == true else {
+                break
+            }
+
+            streak += 1
+
+            guard let previousDate = Calendar.current.date(byAdding: .day, value: -1, to: date) else {
+                break
+            }
+
+            date = previousDate
+        }
+
+        return streak
+    }
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
