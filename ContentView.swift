@@ -775,9 +775,10 @@ final class ScreenTimeManager: ObservableObject {
         store.shield.webDomains = selection.webDomainTokens.isEmpty ? nil : selection.webDomainTokens
 
         if minutes > 0 {
-            statusMessage = AppText.t("limit_applied", minutes)
+            store.clearAllSettings()
+            statusMessage = "Entertainment apps unlocked for \(minutes) earned minutes."
         } else {
-            statusMessage = AppText.t("limit_zero")
+            statusMessage = "Entertainment apps are locked until learning or movement goals are completed."
         }
     }
     #else
@@ -1550,6 +1551,12 @@ struct ContentView: View {
     @AppStorage("customWordList") private var customWordList = ""
     @AppStorage("aiWordPrompt") private var aiWordPrompt = ""
     @AppStorage("wrongWordsData") private var wrongWordsData = ""
+    @AppStorage("requiredLearningAppCount") private var requiredLearningAppCount = 2
+    @AppStorage("movementStartHour") private var movementStartHour = 17
+    @AppStorage("movementEndHour") private var movementEndHour = 19
+    @AppStorage("movementTargetMinutes") private var movementTargetMinutes = 30
+    @AppStorage("movementRewardMinutes") private var movementRewardMinutes = 15
+    @AppStorage("movementActivityType") private var movementActivityType = "Workout"
 
     @State private var parentPINInput = ""
     @State private var newParentPIN = ""
@@ -1562,8 +1569,10 @@ struct ContentView: View {
     private let totalTaskCount = 3
 
     #if canImport(FamilyControls)
-    @State private var activitySelection = FamilyActivitySelection()
-    @State private var isActivityPickerPresented = false
+    @State private var learningActivitySelection = FamilyActivitySelection()
+    @State private var entertainmentActivitySelection = FamilyActivitySelection()
+    @State private var isLearningPickerPresented = false
+    @State private var isEntertainmentPickerPresented = false
     #endif
 
     private var completedCount: Int {
@@ -1571,15 +1580,36 @@ struct ContentView: View {
     }
 
     private var gameTimeMinutes: Int {
-        completedCount * gameMinutesPerTask
+        (completedCount * gameMinutesPerTask) + movementRewardMinutesEarned
     }
 
     private var maxGameTimeMinutes: Int {
-        totalTaskCount * gameMinutesPerTask
+        (totalTaskCount * gameMinutesPerTask) + movementRewardMinutes
     }
 
     private var allTasksCompleted: Bool {
-        completedCount == totalTaskCount
+        completedCount >= requiredLearningAppCount
+    }
+
+    private var isInsideMovementWindow: Bool {
+        let hour = Calendar.current.component(.hour, from: Date())
+        return hour >= movementStartHour && hour < movementEndHour
+    }
+
+    private var movementProgressMinutes: Int {
+        guard isInsideMovementWindow else { return 0 }
+        if movementActivityType == "Exercise Minutes" {
+            return healthSyncManager.exerciseMinutes
+        }
+        return max(healthSyncManager.exerciseMinutes, healthSyncManager.latestWorkoutMinutes)
+    }
+
+    private var movementGoalCompleted: Bool {
+        movementProgressMinutes >= movementTargetMinutes
+    }
+
+    private var movementRewardMinutesEarned: Int {
+        movementGoalCompleted ? movementRewardMinutes : 0
     }
 
     private var todayKey: String {
@@ -1641,12 +1671,12 @@ struct ContentView: View {
 
             NavigationStack {
                 appBackground {
-                    wordChallengeView
+                    appRulesView
                 }
-                .navigationTitle(AppText.t("tab_words"))
+                .navigationTitle("Apps")
             }
             .tabItem {
-                Label(AppText.t("tab_words"), systemImage: "textformat.abc")
+                Label("Apps", systemImage: "app.badge.checkmark")
             }
 
             NavigationStack {
@@ -1693,7 +1723,8 @@ struct ContentView: View {
         .onChange(of: readingCompleted) { _ in updateTodayProgress() }
         .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
         #if canImport(FamilyControls)
-        .familyActivityPicker(isPresented: $isActivityPickerPresented, selection: $activitySelection)
+        .familyActivityPicker(isPresented: $isLearningPickerPresented, selection: $learningActivitySelection)
+        .familyActivityPicker(isPresented: $isEntertainmentPickerPresented, selection: $entertainmentActivitySelection)
         #endif
     }
 
@@ -1704,10 +1735,140 @@ struct ContentView: View {
             encouragementView
             gameSummaryView
             taskListView
+            movementWindowSummaryCard
             progressView
             resetButton
         }
         .padding()
+    }
+
+    private var appRulesView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Learning Unlock")
+                    .font(.largeTitle)
+                    .bold()
+
+                Text("Entertainment apps stay locked first. Learning app usage earns entertainment minutes.")
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                StatCard(
+                    title: "Required",
+                    value: "\(requiredLearningAppCount)",
+                    subtitle: "study apps",
+                    color: .purple,
+                    iconName: "checklist"
+                )
+
+                StatCard(
+                    title: "Earned",
+                    value: "\(gameTimeMinutes)",
+                    subtitle: "minutes",
+                    color: .blue,
+                    iconName: "gamecontroller.fill"
+                )
+            }
+
+            appSelectionCard
+            taskListView
+            screenTimeControlCard
+        }
+        .padding()
+    }
+
+    private var appSelectionCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "app.connected.to.app.below.fill")
+                    .foregroundStyle(.purple)
+
+                Text("App Groups")
+                    .font(.headline)
+            }
+
+            Text("Choose learning apps to monitor and entertainment apps to lock or unlock. Automatic usage reading needs the DeviceActivity extension in the next Xcode step.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            #if canImport(FamilyControls)
+            Button {
+                isLearningPickerPresented = true
+            } label: {
+                Label("Choose Learning Apps", systemImage: "book.closed.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+
+            Button {
+                isEntertainmentPickerPresented = true
+            } label: {
+                Label("Choose Entertainment Apps", systemImage: "gamecontroller.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            #else
+            Text("FamilyControls picker is unavailable in this build.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            #endif
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var screenTimeControlCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "lock.shield.fill")
+                    .foregroundStyle(.blue)
+
+                Text(AppText.t("screen_time_api"))
+                    .font(.headline)
+            }
+
+            Text(AppText.t("authorization", screenTimeManager.authorizationState.displayText))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Button {
+                Task {
+                    await screenTimeManager.requestAuthorization()
+                    applyScreenTimeLimit()
+                }
+            } label: {
+                Label(AppText.t("request_screen_time_permission"), systemImage: "hand.raised.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button {
+                applyScreenTimeLimit()
+            } label: {
+                Label(gameTimeMinutes > 0 ? "Apply Earned Unlock" : "Lock Entertainment Apps", systemImage: gameTimeMinutes > 0 ? "lock.open.fill" : "lock.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+
+            Button {
+                screenTimeManager.clearRestrictions()
+            } label: {
+                Label(AppText.t("clear_screen_time_restrictions"), systemImage: "xmark.shield")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+
+            Text(screenTimeManager.statusMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var wordChallengeView: some View {
@@ -2011,9 +2172,33 @@ struct ContentView: View {
                 )
             }
 
+            movementWindowSummaryCard
             movementSyncCard
         }
         .padding()
+    }
+
+    private var movementWindowSummaryCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: movementGoalCompleted ? "checkmark.seal.fill" : "clock.badge.exclamationmark")
+                    .foregroundStyle(movementGoalCompleted ? .green : .orange)
+
+                Text("Move Unlock Rule")
+                    .font(.headline)
+            }
+
+            Text("Window: \(movementStartHour):00-\(movementEndHour):00. Goal: \(movementTargetMinutes) min \(movementActivityType).")
+                .font(.subheadline)
+
+            Text("Progress in window: \(movementProgressMinutes) / \(movementTargetMinutes) min. Reward: \(movementRewardMinutesEarned) min.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var movementSyncCard: some View {
@@ -2148,8 +2333,8 @@ struct ContentView: View {
             cloudSyncCard
             childProfileCard
             parentTaskSettingsCard
-            parentWordSettingsCard
             parentRewardSettingsCard
+            parentMovementSettingsCard
             parentPINCard
             parentNotesCard
 
@@ -2297,10 +2482,10 @@ struct ContentView: View {
             Text(AppText.t("daily_progress"))
                 .font(.headline)
 
-            ProgressView(value: Double(completedCount), total: Double(totalTaskCount))
+            ProgressView(value: Double(completedCount), total: Double(requiredLearningAppCount))
                 .tint(allTasksCompleted ? .green : .blue)
 
-            Text(AppText.t("progress_rule", gameMinutesPerTask))
+            Text("Each completed learning app goal earns \(gameMinutesPerTask) entertainment minutes. Movement can add \(movementRewardMinutes) minutes.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -2343,9 +2528,9 @@ struct ContentView: View {
             #if canImport(FamilyControls)
             Button {
                 screenTimeManager.statusMessage = AppText.t("opening_picker")
-                isActivityPickerPresented = true
+                isEntertainmentPickerPresented = true
             } label: {
-                Label(AppText.t("select_apps_categories"), systemImage: "app.badge")
+                Label("Select Entertainment Apps", systemImage: "gamecontroller.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -2586,17 +2771,18 @@ struct ContentView: View {
                 Image(systemName: "slider.horizontal.3")
                     .foregroundStyle(.purple)
 
-                Text("Learning Tasks")
+                Text("Learning App Goals")
                     .font(.headline)
             }
 
-            Text("Adjust the expected learning time for each daily task.")
+            Text("Adjust the expected usage time for each daily learning app.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Stepper("Math: \(mathMinutes) min", value: $mathMinutes, in: 5...120, step: 5)
-            Stepper("English: \(englishMinutes) min", value: $englishMinutes, in: 5...120, step: 5)
-            Stepper("Reading: \(readingMinutes) min", value: $readingMinutes, in: 5...120, step: 5)
+            Stepper("Required study apps: \(requiredLearningAppCount)", value: $requiredLearningAppCount, in: 1...3, step: 1)
+            Stepper("Math app: \(mathMinutes) min", value: $mathMinutes, in: 5...180, step: 5)
+            Stepper("English app: \(englishMinutes) min", value: $englishMinutes, in: 5...180, step: 5)
+            Stepper("Reading app: \(readingMinutes) min", value: $readingMinutes, in: 5...180, step: 5)
 
             TextField("Math note", text: $mathNote)
                 .textFieldStyle(.roundedBorder)
@@ -2678,6 +2864,37 @@ struct ContentView: View {
             Text("All three tasks can unlock up to \(maxGameTimeMinutes) minutes.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var parentMovementSettingsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "figure.run.circle.fill")
+                    .foregroundStyle(.orange)
+
+                Text("Movement Window")
+                    .font(.headline)
+            }
+
+            Text("Set the daily activity window and the movement reward.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Stepper("Start: \(movementStartHour):00", value: $movementStartHour, in: 0...23, step: 1)
+            Stepper("End: \(movementEndHour):00", value: $movementEndHour, in: 1...24, step: 1)
+            Stepper("Goal: \(movementTargetMinutes) min", value: $movementTargetMinutes, in: 5...180, step: 5)
+            Stepper("Reward: \(movementRewardMinutes) min", value: $movementRewardMinutes, in: 0...60, step: 5)
+
+            Picker("Activity", selection: $movementActivityType) {
+                Text("Workout").tag("Workout")
+                Text("Exercise Minutes").tag("Exercise Minutes")
+            }
+            .pickerStyle(.segmented)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2854,7 +3071,7 @@ struct ContentView: View {
 
     private func applyScreenTimeLimit() {
         #if canImport(FamilyControls) && canImport(ManagedSettings)
-        screenTimeManager.applyGameTimeLimit(minutes: gameTimeMinutes, selection: activitySelection)
+        screenTimeManager.applyGameTimeLimit(minutes: gameTimeMinutes, selection: entertainmentActivitySelection)
         #else
         screenTimeManager.applyGameTimeLimit(minutes: gameTimeMinutes)
         #endif
