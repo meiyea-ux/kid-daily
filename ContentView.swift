@@ -885,7 +885,7 @@ final class HealthSyncManager: ObservableObject {
     }
 
     private func requestHealthAuthorization(readTypes: Set<HKObjectType>) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             healthStore.requestAuthorization(toShare: [], read: readTypes) { success, error in
                 if let error {
                     continuation.resume(throwing: error)
@@ -899,7 +899,7 @@ final class HealthSyncManager: ObservableObject {
     }
 
     private func sumQuantity(_ type: HKQuantityType, unit: HKUnit) async -> Double {
-        await withCheckedContinuation { continuation in
+        await withCheckedContinuation { (continuation: CheckedContinuation<Double, Never>) in
             let query = HKStatisticsQuery(
                 quantityType: type,
                 quantitySamplePredicate: todayPredicate(),
@@ -914,7 +914,7 @@ final class HealthSyncManager: ObservableObject {
     }
 
     private func latestWorkout() async -> (name: String, minutes: Int) {
-        await withCheckedContinuation { continuation in
+        await withCheckedContinuation { (continuation: CheckedContinuation<(name: String, minutes: Int), Never>) in
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
             let query = HKSampleQuery(
                 sampleType: HKObjectType.workoutType(),
