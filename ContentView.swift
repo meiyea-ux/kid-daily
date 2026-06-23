@@ -14,10 +14,6 @@ import ManagedSettings
 import HealthKit
 #endif
 
-#if canImport(Speech) && canImport(AVFoundation)
-import Speech
-import AVFoundation
-#endif
 
 enum AppText {
     static func t(_ key: String, _ args: CVarArg...) -> String {
@@ -48,7 +44,7 @@ enum AppText {
         "en": [
             "app_name": "KidDaily",
             "tab_today": "Today",
-            "tab_words": "Words",
+            "tab_apps": "Apps",
             "tab_move": "Move",
             "tab_records": "Records",
             "tab_parent": "Parent",
@@ -149,7 +145,7 @@ enum AppText {
         "zh-Hans": [
             "app_name": "KidDaily",
             "tab_today": "今日",
-            "tab_words": "单词",
+            "tab_apps": "应用",
             "tab_move": "运动",
             "tab_records": "记录",
             "tab_parent": "家长",
@@ -250,7 +246,7 @@ enum AppText {
         "zh-Hant": [
             "app_name": "KidDaily",
             "tab_today": "今日",
-            "tab_words": "單字",
+            "tab_apps": "應用",
             "tab_move": "運動",
             "tab_records": "記錄",
             "tab_parent": "家長",
@@ -351,7 +347,7 @@ enum AppText {
         "ja": [
             "app_name": "KidDaily",
             "tab_today": "今日",
-            "tab_words": "単語",
+            "tab_apps": "アプリ",
             "tab_move": "運動",
             "tab_records": "記録",
             "tab_parent": "保護者",
@@ -452,7 +448,7 @@ enum AppText {
         "ko": [
             "app_name": "KidDaily",
             "tab_today": "오늘",
-            "tab_words": "단어",
+            "tab_apps": "앱",
             "tab_move": "운동",
             "tab_records": "기록",
             "tab_parent": "부모",
@@ -553,7 +549,7 @@ enum AppText {
         "es": [
             "app_name": "KidDaily",
             "tab_today": "Hoy",
-            "tab_words": "Palabras",
+            "tab_apps": "Apps",
             "tab_move": "Movimiento",
             "tab_records": "Registros",
             "tab_parent": "Padres",
@@ -976,141 +972,6 @@ private extension HKWorkoutActivityType {
 #endif
 
 @MainActor
-final class SpeechRecitationManager: NSObject, ObservableObject {
-    @Published var transcript = ""
-    @Published var statusMessage = "Tap record and recite the sentence aloud."
-    @Published var isRecording = false
-
-    #if canImport(Speech) && canImport(AVFoundation)
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-    private let audioEngine = AVAudioEngine()
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private var autoStopTask: Task<Void, Never>?
-    #endif
-
-    func startRecording() async {
-        #if canImport(Speech) && canImport(AVFoundation)
-        guard !isRecording else { return }
-
-        do {
-            try await requestPermissions()
-            try beginRecognition()
-        } catch {
-            statusMessage = "Speech recitation failed: \(error.localizedDescription)"
-            stopRecording()
-        }
-        #else
-        statusMessage = "Speech recognition is unavailable in this build."
-        #endif
-    }
-
-    func stopRecording() {
-        #if canImport(Speech) && canImport(AVFoundation)
-        autoStopTask?.cancel()
-        autoStopTask = nil
-
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
-
-        recognitionRequest?.endAudio()
-        recognitionTask?.cancel()
-        recognitionRequest = nil
-        recognitionTask = nil
-        isRecording = false
-        statusMessage = transcript.isEmpty ? "Recording stopped. Try reciting again." : "Recording stopped. Compare your sentence below."
-        #else
-        statusMessage = "Speech recognition is unavailable in this build."
-        #endif
-    }
-
-    func reset() {
-        stopRecording()
-        transcript = ""
-        statusMessage = "Tap record and recite the sentence aloud."
-    }
-
-    #if canImport(Speech) && canImport(AVFoundation)
-    private func requestPermissions() async throws {
-        let speechStatus = await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { status in
-                continuation.resume(returning: status)
-            }
-        }
-
-        guard speechStatus == .authorized else {
-            throw NSError(domain: "KidDailySpeech", code: 1, userInfo: [NSLocalizedDescriptionKey: "Speech recognition permission was not granted."])
-        }
-
-        let microphoneAllowed = await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { allowed in
-                continuation.resume(returning: allowed)
-            }
-        }
-
-        guard microphoneAllowed else {
-            throw NSError(domain: "KidDailySpeech", code: 2, userInfo: [NSLocalizedDescriptionKey: "Microphone permission was not granted."])
-        }
-    }
-
-    private func beginRecognition() throws {
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        transcript = ""
-
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        recognitionRequest = request
-
-        guard let speechRecognizer, speechRecognizer.isAvailable else {
-            throw NSError(domain: "KidDailySpeech", code: 3, userInfo: [NSLocalizedDescriptionKey: "English speech recognizer is not available now."])
-        }
-
-        let inputNode = audioEngine.inputNode
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
-            request.append(buffer)
-        }
-
-        audioEngine.prepare()
-        try audioEngine.start()
-        isRecording = true
-        statusMessage = "Listening. Recite the sentence clearly."
-        autoStopTask?.cancel()
-        autoStopTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 60_000_000_000)
-            await MainActor.run {
-                guard let self, self.isRecording else { return }
-                self.statusMessage = "Recording reached 60 seconds and stopped automatically."
-                self.stopRecording()
-            }
-        }
-
-        recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
-            Task { @MainActor in
-                guard let self else { return }
-
-                if let result {
-                    self.transcript = result.bestTranscription.formattedString
-                }
-
-                if error != nil || result?.isFinal == true {
-                    self.stopRecording()
-                }
-            }
-        }
-    }
-    #endif
-}
-
-@MainActor
 final class CloudSyncManager: ObservableObject {
     @Published var statusMessage = "Enter the pairing code from the parent web dashboard."
     @Published var isUploading = false
@@ -1139,10 +1000,6 @@ final class CloudSyncManager: ObservableObject {
         let math_note: String
         let english_note: String
         let reading_note: String
-        let word_level: String?
-        let daily_word_goal: Int?
-        let custom_word_list: String?
-        let ai_word_prompt: String?
     }
 
     func fetchRemoteSettings(pairingCode: String) async -> RemoteSettings? {
@@ -1516,20 +1373,10 @@ struct ScreenTimeSetupStep: View {
     }
 }
 
-struct WordQuestion: Identifiable {
-    let id = UUID()
-    let word: String
-    let pronunciation: String
-    let correctMeaning: String
-    let options: [String]
-    let example: String
-}
-
 struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager()
     @StateObject private var cloudSyncManager = CloudSyncManager()
     @StateObject private var healthSyncManager = HealthSyncManager()
-    @StateObject private var speechRecitationManager = SpeechRecitationManager()
 
     @AppStorage("mathCompleted") private var mathCompleted = false
     @AppStorage("englishCompleted") private var englishCompleted = false
@@ -1543,14 +1390,9 @@ struct ContentView: View {
     @AppStorage("gameMinutesPerTask") private var gameMinutesPerTask = 10
     @AppStorage("childName") private var childName = "Kid"
     @AppStorage("mathNote") private var mathNote = "Practice number skills"
-    @AppStorage("englishNote") private var englishNote = "Learn words and sentences"
+    @AppStorage("englishNote") private var englishNote = "Use a learning app for English practice"
     @AppStorage("readingNote") private var readingNote = "Read a story or book"
     @AppStorage("webPairingCode") private var webPairingCode = ""
-    @AppStorage("wordLevel") private var wordLevel = "Gaokao Core"
-    @AppStorage("dailyWordGoal") private var dailyWordGoal = 10
-    @AppStorage("customWordList") private var customWordList = ""
-    @AppStorage("aiWordPrompt") private var aiWordPrompt = ""
-    @AppStorage("wrongWordsData") private var wrongWordsData = ""
     @AppStorage("requiredLearningAppCount") private var requiredLearningAppCount = 2
     @AppStorage("movementStartHour") private var movementStartHour = 17
     @AppStorage("movementEndHour") private var movementEndHour = 19
@@ -1562,9 +1404,6 @@ struct ContentView: View {
     @State private var newParentPIN = ""
     @State private var isParentUnlocked = false
     @State private var parentPINError = ""
-    @State private var wordQuestionIndex = 0
-    @State private var wordCorrectCount = 0
-    @State private var wordFeedback = "Choose the correct meaning to pass each word gate."
 
     private let totalTaskCount = 3
 
@@ -1634,27 +1473,6 @@ struct ContentView: View {
 
     private var lastSevenCompletedDays: Int {
         lastSevenRecords.filter { $0.isFullyCompleted }.count
-    }
-
-    private var wordChallengeFinished: Bool {
-        wordQuestionIndex >= dailyWordQuestions.count
-    }
-
-    private var currentWordQuestion: WordQuestion {
-        dailyWordQuestions[min(wordQuestionIndex, dailyWordQuestions.count - 1)]
-    }
-
-    private var dailyWordQuestions: [WordQuestion] {
-        let customQuestions = parseCustomWordList()
-        let source = customQuestions.isEmpty ? Self.words(for: wordLevel) : customQuestions
-        return Array(source.prefix(max(1, min(dailyWordGoal, source.count))))
-    }
-
-    private var wrongWords: [String] {
-        wrongWordsData
-            .split(separator: "|")
-            .map { String($0) }
-            .filter { !$0.isEmpty }
     }
 
     var body: some View {
@@ -1868,260 +1686,6 @@ struct ContentView: View {
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private var wordChallengeView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Word Challenge")
-                    .font(.largeTitle)
-                    .bold()
-
-                Text("Pass today's word gates to complete the English task.")
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack(spacing: 12) {
-                StatCard(
-                    title: "Gate",
-                    value: "\(min(wordQuestionIndex + 1, dailyWordQuestions.count))",
-                    subtitle: "of \(dailyWordQuestions.count)",
-                    color: .purple,
-                    iconName: "flag.checkered"
-                )
-
-                StatCard(
-                    title: "Correct",
-                    value: "\(wordCorrectCount)",
-                    subtitle: "words",
-                    color: .green,
-                    iconName: "checkmark.seal.fill"
-                )
-            }
-
-            Text("Level: \(wordLevel) | Daily goal: \(dailyWordQuestions.count) words")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            if wordChallengeFinished {
-                wordChallengeCompleteCard
-            } else {
-                wordQuestionCard
-            }
-
-            wrongWordsReviewCard
-
-            Text(wordFeedback)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
-            Button {
-                resetWordChallenge()
-            } label: {
-                Label("Restart Word Challenge", systemImage: "arrow.counterclockwise")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-    }
-
-    private var wordQuestionCard: some View {
-        let question = currentWordQuestion
-
-        return VStack(alignment: .leading, spacing: 16) {
-            Text("Word Gate \(wordQuestionIndex + 1)")
-                .font(.headline)
-                .foregroundStyle(.purple)
-
-            Text(question.word)
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-
-            Text(question.pronunciation)
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
-            Text(question.example)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 10) {
-                ForEach(question.options, id: \.self) { option in
-                    Button {
-                        answerWord(option)
-                    } label: {
-                        HStack {
-                            Text(option)
-                                .font(.headline)
-
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white.opacity(0.92))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-
-            sentenceRecitationCard(for: question)
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(
-                colors: [Color.purple.opacity(0.16), Color.blue.opacity(0.10), Color.white.opacity(0.92)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
-    }
-
-    private var wordChallengeCompleteCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: "trophy.fill")
-                .font(.largeTitle)
-                .foregroundStyle(.yellow)
-
-            Text("Challenge Complete")
-                .font(.title)
-                .bold()
-
-            Text("Score: \(wordCorrectCount) / \(dailyWordQuestions.count)")
-                .font(.headline)
-
-            Text("English task is now completed. Your earned game time has been updated.")
-                .foregroundStyle(.secondary)
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.green.opacity(0.14))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
-    }
-
-    private func sentenceRecitationCard(for question: WordQuestion) -> some View {
-        let score = recitationScore(expected: question.example, spoken: speechRecitationManager.transcript)
-
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "waveform.circle.fill")
-                    .foregroundStyle(.blue)
-
-                Text("Sentence Recitation")
-                    .font(.headline)
-
-                Spacer()
-
-                Text("\(score)%")
-                    .font(.headline)
-                    .foregroundStyle(score >= 80 ? .green : .orange)
-            }
-
-            Text("Target sentence")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(question.example)
-                .font(.headline)
-
-            if !speechRecitationManager.transcript.isEmpty {
-                Text("Your speech")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text(speechRecitationManager.transcript)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                ProgressView(value: Double(score), total: 100)
-                    .tint(score >= 80 ? .green : .orange)
-            }
-
-            HStack {
-                Button {
-                    Task {
-                        await speechRecitationManager.startRecording()
-                    }
-                } label: {
-                    Label(speechRecitationManager.isRecording ? "Recording..." : "Start Reciting", systemImage: "mic.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(speechRecitationManager.isRecording)
-
-                Button {
-                    speechRecitationManager.stopRecording()
-                } label: {
-                    Label("Stop", systemImage: "stop.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .disabled(!speechRecitationManager.isRecording)
-            }
-
-            Button {
-                speechRecitationManager.reset()
-            } label: {
-                Label("Clear Speech Result", systemImage: "xmark.circle")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-
-            Text(speechRecitationManager.statusMessage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .padding()
-        .background(Color.white.opacity(0.88))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private var wrongWordsReviewCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: "book.closed.fill")
-                    .foregroundStyle(.orange)
-
-                Text("Wrong Words")
-                    .font(.headline)
-
-                Spacer()
-
-                Text("\(wrongWords.count)")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-            }
-
-            if wrongWords.isEmpty {
-                Text("No wrong words yet. Keep going.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text(wrongWords.prefix(8).joined(separator: ", "))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Button {
-                wrongWordsData = ""
-            } label: {
-                Label("Clear Wrong Words", systemImage: "trash")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(wrongWords.isEmpty)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.88))
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
@@ -2733,11 +2297,6 @@ struct ContentView: View {
             mathNote = settings.math_note
             englishNote = settings.english_note
             readingNote = settings.reading_note
-            wordLevel = settings.word_level ?? wordLevel
-            dailyWordGoal = settings.daily_word_goal ?? dailyWordGoal
-            customWordList = settings.custom_word_list ?? customWordList
-            aiWordPrompt = settings.ai_word_prompt ?? aiWordPrompt
-            resetWordChallenge()
             updateTodayProgress()
         }
     }
@@ -2792,47 +2351,6 @@ struct ContentView: View {
 
             TextField("Reading note", text: $readingNote)
                 .textFieldStyle(.roundedBorder)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private var parentWordSettingsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Image(systemName: "textformat.abc")
-                    .foregroundStyle(.purple)
-
-                Text("Word Challenge")
-                    .font(.headline)
-            }
-
-            Text("Choose a level, set the daily word goal, or paste custom words from the parent web dashboard.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Picker("Word Level", selection: $wordLevel) {
-                Text("Core").tag("Gaokao Core")
-                Text("Advanced").tag("Gaokao Advanced")
-                Text("Challenge").tag("Gaokao Challenge")
-            }
-            .pickerStyle(.segmented)
-
-            Stepper("Daily words: \(dailyWordGoal)", value: $dailyWordGoal, in: 5...10, step: 1)
-
-            TextField("Custom words: abandon=放弃=Never abandon your dream.", text: $customWordList, axis: .vertical)
-                .lineLimit(2...4)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("AI prompt for future generation", text: $aiWordPrompt, axis: .vertical)
-                .lineLimit(2...4)
-                .textFieldStyle(.roundedBorder)
-
-            Text("Active word list: \(dailyWordQuestions.count) words. AI generation is prepared for a later backend connection.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2979,57 +2497,6 @@ struct ContentView: View {
         .tint(.blue)
     }
 
-    private func answerWord(_ option: String) {
-        guard !wordChallengeFinished else { return }
-
-        let question = currentWordQuestion
-        if option == question.correctMeaning {
-            wordCorrectCount += 1
-            wordFeedback = "Correct. \(question.word) means \(question.correctMeaning)."
-        } else {
-            wordFeedback = "Good try. \(question.word) means \(question.correctMeaning)."
-            saveWrongWord(question)
-        }
-
-        wordQuestionIndex += 1
-        speechRecitationManager.reset()
-
-        if wordChallengeFinished {
-            englishCompleted = true
-            updateTodayProgress()
-        }
-    }
-
-    private func resetWordChallenge() {
-        wordQuestionIndex = 0
-        wordCorrectCount = 0
-        wordFeedback = "Choose the correct meaning to pass each word gate."
-        speechRecitationManager.reset()
-    }
-
-    private func saveWrongWord(_ question: WordQuestion) {
-        let entry = "\(question.word): \(question.correctMeaning)"
-        var words = wrongWords.filter { $0 != entry }
-        words.insert(entry, at: 0)
-        wrongWordsData = words.prefix(30).joined(separator: "|")
-    }
-
-    private func recitationScore(expected: String, spoken: String) -> Int {
-        let expectedWords = normalizedWords(from: expected)
-        let spokenWords = Set(normalizedWords(from: spoken))
-        guard !expectedWords.isEmpty, !spokenWords.isEmpty else { return 0 }
-
-        let matchedCount = expectedWords.filter { spokenWords.contains($0) }.count
-        return Int((Double(matchedCount) / Double(expectedWords.count) * 100).rounded())
-    }
-
-    private func normalizedWords(from text: String) -> [String] {
-        text
-            .lowercased()
-            .components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-    }
-
     private func appBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack {
             LinearGradient(
@@ -3056,7 +2523,6 @@ struct ContentView: View {
         mathCompleted = false
         englishCompleted = false
         readingCompleted = false
-        resetWordChallenge()
         lastSavedDateKey = todayKey
     }
 
@@ -3126,105 +2592,6 @@ struct ContentView: View {
 
         return records.sorted { $0.dateKey > $1.dateKey }
     }
-
-    private func parseCustomWordList() -> [WordQuestion] {
-        customWordList
-            .split(whereSeparator: { $0 == "\n" || $0 == "," || $0 == ";" })
-            .compactMap { rawItem in
-                let parts = rawItem.split(separator: "=", maxSplits: 2).map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-                guard parts.count >= 2, !parts[0].isEmpty, !parts[1].isEmpty else {
-                    return nil
-                }
-
-                let sentence = parts.count >= 3 && !parts[2].isEmpty ? parts[2] : "Please recite a sentence with \(parts[0])."
-
-                return WordQuestion(
-                    word: parts[0],
-                    pronunciation: "custom",
-                    correctMeaning: parts[1],
-                    options: makeOptions(correct: parts[1]),
-                    example: sentence
-                )
-            }
-    }
-
-    private func makeOptions(correct: String) -> [String] {
-        let distractors = ["a place", "a feeling", "an action", "a person", "a thing", "a time"]
-            .filter { $0 != correct }
-        return Array(([correct] + distractors).prefix(3))
-    }
-
-    private func streakCount(from records: [DailyRecord]) -> Int {
-        var streak = 0
-        var date = Calendar.current.startOfDay(for: Date())
-
-        while true {
-            let key = Self.dayFormatter.string(from: date)
-            guard records.first(where: { $0.dateKey == key })?.isFullyCompleted == true else {
-                break
-            }
-
-            streak += 1
-
-            guard let previousDate = Calendar.current.date(byAdding: .day, value: -1, to: date) else {
-                break
-            }
-
-            date = previousDate
-        }
-
-        return streak
-    }
-
-    private static func words(for level: String) -> [WordQuestion] {
-        switch level {
-        case "Gaokao Advanced", "Builder":
-            return gaokaoAdvancedWords
-        case "Gaokao Challenge", "Explorer":
-            return gaokaoChallengeWords
-        default:
-            return gaokaoCoreWords
-        }
-    }
-
-    private static let gaokaoCoreWords: [WordQuestion] = [
-        WordQuestion(word: "abandon", pronunciation: "/uh-ban-duhn/", correctMeaning: "放弃", options: ["放弃", "吸收", "适应"], example: "Never abandon your dream when life becomes difficult."),
-        WordQuestion(word: "ability", pronunciation: "/uh-bil-uh-tee/", correctMeaning: "能力", options: ["能力", "态度", "证据"], example: "Reading every day can improve your language ability."),
-        WordQuestion(word: "abroad", pronunciation: "/uh-brawd/", correctMeaning: "在国外", options: ["在国外", "准确的", "方便的"], example: "Many students hope to study abroad in the future."),
-        WordQuestion(word: "absorb", pronunciation: "/uhb-zorb/", correctMeaning: "吸收", options: ["吸收", "争论", "表明"], example: "Good learners absorb new knowledge from mistakes."),
-        WordQuestion(word: "academic", pronunciation: "/ak-uh-dem-ik/", correctMeaning: "学术的", options: ["学术的", "灵活的", "有效的"], example: "Academic success depends on effort and method."),
-        WordQuestion(word: "access", pronunciation: "/ak-ses/", correctMeaning: "通道；使用权", options: ["通道；使用权", "责任", "机会"], example: "The Internet gives students access to many resources."),
-        WordQuestion(word: "accurate", pronunciation: "/ak-yur-it/", correctMeaning: "准确的", options: ["准确的", "经济的", "自信的"], example: "An accurate answer requires careful reading."),
-        WordQuestion(word: "achieve", pronunciation: "/uh-cheev/", correctMeaning: "实现", options: ["实现", "比较", "保护"], example: "You can achieve your goal through daily practice."),
-        WordQuestion(word: "adapt", pronunciation: "/uh-dapt/", correctMeaning: "适应", options: ["适应", "创造", "影响"], example: "Teenagers need to adapt to a changing world."),
-        WordQuestion(word: "attitude", pronunciation: "/at-i-tood/", correctMeaning: "态度", options: ["态度", "结果", "平衡"], example: "A positive attitude helps us face challenges.")
-    ]
-
-    private static let gaokaoAdvancedWords: [WordQuestion] = [
-        WordQuestion(word: "approach", pronunciation: "/uh-prohch/", correctMeaning: "方法；接近", options: ["方法；接近", "环境", "证据"], example: "A good approach makes vocabulary learning easier."),
-        WordQuestion(word: "argument", pronunciation: "/ahr-gyuh-muhnt/", correctMeaning: "争论；论点", options: ["争论；论点", "机会", "责任"], example: "His argument was clear and supported by facts."),
-        WordQuestion(word: "benefit", pronunciation: "/ben-uh-fit/", correctMeaning: "益处", options: ["益处", "结果", "能力"], example: "Exercise can benefit both the body and the mind."),
-        WordQuestion(word: "challenge", pronunciation: "/chal-inj/", correctMeaning: "挑战", options: ["挑战", "选择", "习惯"], example: "Every challenge is a chance to become stronger."),
-        WordQuestion(word: "combine", pronunciation: "/kuhm-byn/", correctMeaning: "结合", options: ["结合", "放弃", "比较"], example: "KidDaily combines learning tasks with healthy habits."),
-        WordQuestion(word: "communicate", pronunciation: "/kuh-myoo-ni-kayt/", correctMeaning: "交流", options: ["交流", "适应", "吸收"], example: "We should communicate with parents honestly."),
-        WordQuestion(word: "concentrate", pronunciation: "/kon-suhn-trayt/", correctMeaning: "集中注意力", options: ["集中注意力", "实现", "影响"], example: "Put away your phone and concentrate on the sentence."),
-        WordQuestion(word: "consequence", pronunciation: "/kon-si-kwens/", correctMeaning: "后果", options: ["后果", "证据", "通道"], example: "Every choice may bring a consequence."),
-        WordQuestion(word: "contribute", pronunciation: "/kuhn-trib-yoot/", correctMeaning: "贡献", options: ["贡献", "保护", "解释"], example: "Small daily efforts contribute to future success."),
-        WordQuestion(word: "convenient", pronunciation: "/kuhn-veen-yuhnt/", correctMeaning: "方便的", options: ["方便的", "准确的", "学术的"], example: "Online tools make review more convenient.")
-    ]
-
-    private static let gaokaoChallengeWords: [WordQuestion] = [
-        WordQuestion(word: "distinguish", pronunciation: "/di-sting-gwish/", correctMeaning: "区分", options: ["区分", "贡献", "结合"], example: "Readers must distinguish facts from opinions."),
-        WordQuestion(word: "economy", pronunciation: "/ih-kon-uh-mee/", correctMeaning: "经济", options: ["经济", "态度", "证据"], example: "Education plays an important role in the economy."),
-        WordQuestion(word: "efficient", pronunciation: "/ih-fish-uhnt/", correctMeaning: "高效的", options: ["高效的", "方便的", "准确的"], example: "An efficient plan saves time before exams."),
-        WordQuestion(word: "environment", pronunciation: "/en-vy-ruhn-muhnt/", correctMeaning: "环境", options: ["环境", "后果", "能力"], example: "A quiet environment helps students concentrate."),
-        WordQuestion(word: "evidence", pronunciation: "/ev-i-duhns/", correctMeaning: "证据", options: ["证据", "机会", "挑战"], example: "The writer used evidence to support the argument."),
-        WordQuestion(word: "flexible", pronunciation: "/flek-suh-bul/", correctMeaning: "灵活的", options: ["灵活的", "学术的", "积极的"], example: "A flexible schedule can reduce stress."),
-        WordQuestion(word: "indicate", pronunciation: "/in-di-kayt/", correctMeaning: "表明", options: ["表明", "吸收", "放弃"], example: "The results indicate that practice is useful."),
-        WordQuestion(word: "influence", pronunciation: "/in-floo-uhns/", correctMeaning: "影响", options: ["影响", "实现", "接近"], example: "Good habits influence a student's future."),
-        WordQuestion(word: "opportunity", pronunciation: "/op-er-too-nuh-tee/", correctMeaning: "机会", options: ["机会", "后果", "方法"], example: "Every mistake is an opportunity to learn."),
-        WordQuestion(word: "responsibility", pronunciation: "/ri-spon-suh-bil-uh-tee/", correctMeaning: "责任", options: ["责任", "经济", "通道"], example: "Learning is a responsibility we should take seriously.")
-    ]
 
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()

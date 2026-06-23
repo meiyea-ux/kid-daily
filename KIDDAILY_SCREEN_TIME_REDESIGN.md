@@ -22,7 +22,7 @@ KidDaily also keeps a Move Unlock rule:
 `ContentView.swift` now contains the main-app experience:
 
 - `Apps` tab replaces the old `Words` tab.
-- The child-facing word-recitation flow is no longer exposed in the tab bar.
+- The word-recitation flow, speech-recognition helper, parent word settings, and built-in word lists have been removed from `ContentView.swift`.
 - Parent and Apps views expose:
   - learning app selection,
   - entertainment app selection,
