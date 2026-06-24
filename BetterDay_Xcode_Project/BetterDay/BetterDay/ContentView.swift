@@ -727,7 +727,7 @@ struct LearningTaskRow: View {
                     Text(title)
                         .font(.headline)
 
-                    Text("\(minutes) minutes")
+                    Text("\(minutes) 分钟")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
@@ -1026,7 +1026,7 @@ struct RecordRow: View {
 
             Spacer()
 
-            Text("\(record.gameTimeMinutes) min")
+            Text("\(record.gameTimeMinutes) 分钟")
                 .font(.headline)
         }
         .padding()
@@ -1058,7 +1058,7 @@ struct RecordDetailView: View {
                 HStack {
                     Text(AppText.t("game_time"))
                     Spacer()
-                    Text("\(record.gameTimeMinutes) min")
+                    Text("\(record.gameTimeMinutes) 分钟")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -1128,10 +1128,10 @@ struct ContentView: View {
     @AppStorage("englishMinutes") private var englishMinutes = 20
     @AppStorage("readingMinutes") private var readingMinutes = 15
     @AppStorage("gameMinutesPerTask") private var gameMinutesPerTask = 10
-    @AppStorage("childName") private var childName = "Kid"
-    @AppStorage("mathNote") private var mathNote = "Practice number skills"
-    @AppStorage("englishNote") private var englishNote = "Use a learning app for English practice"
-    @AppStorage("readingNote") private var readingNote = "Read a story or book"
+    @AppStorage("childName") private var childName = "孩子"
+    @AppStorage("mathNote") private var mathNote = "练习数字和计算能力"
+    @AppStorage("englishNote") private var englishNote = "使用英语学习应用完成练习"
+    @AppStorage("readingNote") private var readingNote = "阅读一个故事或一本书"
     @AppStorage("webPairingCode") private var webPairingCode = ""
     @AppStorage("requiredLearningAppCount") private var requiredLearningAppCount = 2
     @AppStorage("movementStartHour") private var movementStartHour = 17
@@ -1206,6 +1206,10 @@ struct ContentView: View {
             return healthSyncManager.exerciseMinutes
         }
         return max(healthSyncManager.exerciseMinutes, healthSyncManager.latestWorkoutMinutes)
+    }
+
+    private var localizedMovementActivityType: String {
+        movementActivityType == "Exercise Minutes" ? AppText.t("exercise_minutes") : AppText.t("workout")
     }
 
     private var movementGoalCompleted: Bool {
@@ -1302,6 +1306,7 @@ struct ContentView: View {
             .tag(4)
         }
         .onAppear {
+            normalizeStoredChineseText()
             prepareToday()
             saveTodayRecord()
             screenTimeManager.refreshAuthorizationState()
@@ -1528,7 +1533,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text(AppText.t("movement_window_line", movementStartHour, movementEndHour, movementTargetMinutes, movementActivityType))
+            Text(AppText.t("movement_window_line", movementStartHour, movementEndHour, movementTargetMinutes, localizedMovementActivityType))
                 .font(.subheadline)
 
             Text(movementIsExcusedToday ? "今日已豁免：\(movementExemptionReason)。不奖励娱乐时间，但不破坏连续记录。" : AppText.t("movement_progress_line", movementProgressMinutes, movementTargetMinutes, movementRewardMinutesEarned))
@@ -2683,6 +2688,24 @@ struct ContentView: View {
         englishCompleted = false
         readingCompleted = false
         lastSavedDateKey = todayKey
+    }
+
+    private func normalizeStoredChineseText() {
+        if childName == "Kid" {
+            childName = "孩子"
+        }
+
+        if mathNote == "Practice number skills" {
+            mathNote = "练习数字和计算能力"
+        }
+
+        if englishNote == "Use a learning app for English practice" {
+            englishNote = "使用英语学习应用完成练习"
+        }
+
+        if readingNote == "Read a story or book" {
+            readingNote = "阅读一个故事或一本书"
+        }
     }
 
     private func updateTodayProgress() {
