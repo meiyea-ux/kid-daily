@@ -46,6 +46,27 @@ add column if not exists custom_word_list text not null default '';
 alter table public.child_remote_settings
 add column if not exists ai_word_prompt text not null default '';
 
+alter table public.daily_reports
+add column if not exists daily_completion_percent integer not null default 0;
+
+alter table public.daily_reports
+add column if not exists daily_score_1_to_5 integer not null default 1;
+
+alter table public.daily_reports
+add column if not exists daily_summary text not null default '';
+
+alter table public.daily_reports
+add column if not exists weekly_completion_percent integer not null default 0;
+
+alter table public.daily_reports
+add column if not exists weekly_score_1_to_5 integer not null default 1;
+
+alter table public.daily_reports
+add column if not exists weekly_compare_percent integer not null default 0;
+
+alter table public.daily_reports
+add column if not exists weekly_summary text not null default '';
+
 alter table public.child_pairing_codes enable row level security;
 alter table public.child_remote_settings enable row level security;
 
@@ -147,7 +168,14 @@ create or replace function public.upload_kiddaily_record_by_pairing_code(
   p_game_time_minutes integer,
   p_learning_minutes integer default 0,
   p_entertainment_minutes integer default 0,
-  p_reading_minutes integer default 0
+  p_reading_minutes integer default 0,
+  p_daily_completion_percent integer default 0,
+  p_daily_score_1_to_5 integer default 1,
+  p_daily_summary text default '',
+  p_weekly_completion_percent integer default 0,
+  p_weekly_score_1_to_5 integer default 1,
+  p_weekly_compare_percent integer default 0,
+  p_weekly_summary text default ''
 )
 returns uuid
 language plpgsql
@@ -192,7 +220,14 @@ begin
     reading_minutes,
     growth_score,
     rating,
-    ai_comment
+    ai_comment,
+    daily_completion_percent,
+    daily_score_1_to_5,
+    daily_summary,
+    weekly_completion_percent,
+    weekly_score_1_to_5,
+    weekly_compare_percent,
+    weekly_summary
   )
   values (
     code_row.child_id,
@@ -204,7 +239,14 @@ begin
     greatest(0, p_reading_minutes),
     score,
     rating_text,
-    '来自 KidDaily iOS 儿童端同步：完成 ' || p_completed_count || ' 个任务，获得 ' || p_game_time_minutes || ' 分钟游戏时间。'
+    coalesce(nullif(p_daily_summary, ''), '来自 KidDaily iOS 儿童端同步：完成 ' || p_completed_count || ' 个任务，获得 ' || p_game_time_minutes || ' 分钟游戏时间。'),
+    greatest(0, least(100, p_daily_completion_percent)),
+    greatest(1, least(5, p_daily_score_1_to_5)),
+    coalesce(p_daily_summary, ''),
+    greatest(0, least(100, p_weekly_completion_percent)),
+    greatest(1, least(5, p_weekly_score_1_to_5)),
+    p_weekly_compare_percent,
+    coalesce(p_weekly_summary, '')
   )
   on conflict (child_id, report_date)
   do update set
@@ -215,6 +257,13 @@ begin
     growth_score = excluded.growth_score,
     rating = excluded.rating,
     ai_comment = excluded.ai_comment,
+    daily_completion_percent = excluded.daily_completion_percent,
+    daily_score_1_to_5 = excluded.daily_score_1_to_5,
+    daily_summary = excluded.daily_summary,
+    weekly_completion_percent = excluded.weekly_completion_percent,
+    weekly_score_1_to_5 = excluded.weekly_score_1_to_5,
+    weekly_compare_percent = excluded.weekly_compare_percent,
+    weekly_summary = excluded.weekly_summary,
     updated_at = now()
   returning id into report_id;
 
@@ -232,7 +281,14 @@ grant execute on function public.upload_kiddaily_record_by_pairing_code(
   integer,
   integer,
   integer,
-  integer
+  integer,
+  integer,
+  integer,
+  text,
+  integer,
+  integer,
+  integer,
+  text
 ) to anon, authenticated;
 
 grant execute on function public.get_kiddaily_settings_by_pairing_code(text) to anon, authenticated;

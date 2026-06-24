@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import Combine
+import PhotosUI
 
 #if canImport(FamilyControls)
 import FamilyControls
@@ -121,6 +122,7 @@ enum AppText {
         "uploading": "Uploading...",
         "upload_today_record": "Upload Today's Record",
         "auth_failed": "Authorization failed: %@",
+        "screen_time_denied_help": "Screen Time permission was denied. Use a real iPhone, make sure Family Controls capability is enabled for this bundle ID in Apple Developer, then delete and reinstall the app before requesting again.",
         "opening_picker": "Opening app and category picker...",
         "picker_unavailable": "FamilyActivityPicker is unavailable in this build.",
         "status_not_requested": "Screen Time permission has not been requested yet.",
@@ -207,7 +209,7 @@ enum AppText {
             "exercise": "运动", "min_today": "今日分钟", "active_energy": "活动能量", "latest_workout": "最近运动", "health_sync_desc": "读取今天的步数、Apple 运动分钟、活动能量和最近运动。Apple Watch 运动同步到 iPhone 健康 App 后会显示在这里。",
             "current_streak": "当前连续", "last_7_days": "最近 7 天", "perfect_days": "完美天数", "movement_results": "运动结果", "movement_today": "今天：%d 步，%d 分钟运动，%d 千卡。",
             "latest_workout_line": "最近运动：%@，%d 分钟。", "refresh_movement_data": "刷新运动数据", "web_parent_sync": "家长网页同步", "web_parent_sync_desc": "输入家长网页控制台生成的配对码。今天的学习和娱乐时间会上传，方便远程查看。",
-            "pairing_code": "配对码", "sync_remote_settings": "同步远程设置", "uploading": "上传中...", "upload_today_record": "上传今日记录", "auth_failed": "授权失败：%@", "opening_picker": "正在打开应用和类别选择器...",
+            "pairing_code": "配对码", "sync_remote_settings": "同步远程设置", "uploading": "上传中...", "upload_today_record": "上传今日记录", "auth_failed": "授权失败：%@", "screen_time_denied_help": "屏幕使用时间权限被拒绝。请使用真机，确认 Apple Developer 里该 Bundle ID 已开启 Family Controls 能力，然后删除并重装 App 后重新请求。", "opening_picker": "正在打开应用和类别选择器...",
             "picker_unavailable": "当前构建不可用 FamilyActivityPicker。", "status_not_requested": "尚未请求屏幕使用时间权限。", "status_denied": "屏幕使用时间权限已被拒绝。", "status_approved": "屏幕使用时间权限已通过。",
             "status_unknown": "未知的屏幕使用时间授权状态。", "requesting_screen_time": "正在请求屏幕使用时间权限...", "approve_before_limit": "应用限制前，请先批准屏幕使用时间权限。", "select_before_limit": "应用屏幕使用限制前，请先选择应用或类别。",
             "limit_applied": "已对所选应用应用屏幕使用限制。已获得上限：%d 分钟。", "limit_zero": "还没有获得娱乐时间。所选应用和类别已被限制。", "restrictions_cleared": "屏幕使用限制已清除。", "unavailable_build": "当前构建不可用 FamilyControls。",
@@ -254,9 +256,17 @@ struct DailyRecord: Identifiable, Codable {
     var readingCompleted: Bool
     var completedCount: Int
     var gameTimeMinutes: Int
+    var totalTaskCount: Int?
+    var completionPercent: Int?
+    var scoreOneToFive: Int?
+    var dailySummary: String?
+    var weeklyCompletionPercent: Int?
+    var weeklyScoreOneToFive: Int?
+    var weeklyComparePercent: Int?
+    var weeklySummary: String?
 
     var isFullyCompleted: Bool {
-        completedCount == 3
+        completedCount >= (totalTaskCount ?? 3)
     }
 }
 
@@ -307,7 +317,7 @@ final class ScreenTimeManager: ObservableObject {
             statusMessage = AppText.t("status_not_requested")
         case .denied:
             authorizationState = .denied
-            statusMessage = AppText.t("status_denied")
+            statusMessage = AppText.t("screen_time_denied_help")
         case .approved, .approvedWithDataAccess:
             authorizationState = .approved
             statusMessage = AppText.t("status_approved")
@@ -329,7 +339,7 @@ final class ScreenTimeManager: ObservableObject {
             refreshAuthorizationState()
         } catch {
             authorizationState = .denied
-            statusMessage = AppText.t("auth_failed", error.localizedDescription)
+            statusMessage = AppText.t("auth_failed", error.localizedDescription) + "\n" + AppText.t("screen_time_denied_help")
         }
         #else
         authorizationState = .unavailable
@@ -577,6 +587,13 @@ final class CloudSyncManager: ObservableObject {
         let p_learning_minutes: Int
         let p_entertainment_minutes: Int
         let p_reading_minutes: Int
+        let p_daily_completion_percent: Int
+        let p_daily_score_1_to_5: Int
+        let p_daily_summary: String
+        let p_weekly_completion_percent: Int
+        let p_weekly_score_1_to_5: Int
+        let p_weekly_compare_percent: Int
+        let p_weekly_summary: String
     }
 
     struct RemoteSettings: Decodable {
@@ -649,7 +666,14 @@ final class CloudSyncManager: ObservableObject {
         gameTimeMinutes: Int,
         mathMinutes: Int,
         englishMinutes: Int,
-        readingMinutes: Int
+        readingMinutes: Int,
+        dailyCompletionPercent: Int,
+        dailyScoreOneToFive: Int,
+        dailySummary: String,
+        weeklyCompletionPercent: Int,
+        weeklyScoreOneToFive: Int,
+        weeklyComparePercent: Int,
+        weeklySummary: String
     ) async {
         let trimmedCode = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
@@ -673,7 +697,14 @@ final class CloudSyncManager: ObservableObject {
             p_game_time_minutes: gameTimeMinutes,
             p_learning_minutes: (mathCompleted ? mathMinutes : 0) + (englishCompleted ? englishMinutes : 0),
             p_entertainment_minutes: gameTimeMinutes,
-            p_reading_minutes: readingCompleted ? readingMinutes : 0
+            p_reading_minutes: readingCompleted ? readingMinutes : 0,
+            p_daily_completion_percent: dailyCompletionPercent,
+            p_daily_score_1_to_5: dailyScoreOneToFive,
+            p_daily_summary: dailySummary,
+            p_weekly_completion_percent: weeklyCompletionPercent,
+            p_weekly_score_1_to_5: weeklyScoreOneToFive,
+            p_weekly_compare_percent: weeklyComparePercent,
+            p_weekly_summary: weeklySummary
         )
 
         do {
@@ -741,6 +772,9 @@ struct LearningTaskRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                ProgressMeter(value: isCompleted ? 1 : 0, tint: color)
+                    .padding(.top, 4)
             }
 
             Spacer(minLength: 8)
@@ -762,73 +796,6 @@ struct LearningTaskRow: View {
         }
         .shadow(color: .black.opacity(0.06), radius: 10, y: 5)
         .animation(.spring(response: 0.28, dampingFraction: 0.8), value: isCompleted)
-    }
-}
-
-struct EncouragementCard: View {
-    let completedCount: Int
-    let totalTaskCount: Int
-    let gameTimeMinutes: Int
-    let maxGameTimeMinutes: Int
-
-    private var iconName: String {
-        completedCount == totalTaskCount ? "party.popper.fill" : "sparkles"
-    }
-
-    private var title: String {
-        switch completedCount {
-        case 0:
-            return "准备开始了吗？"
-        case 1:
-            return "开头很棒！"
-        case 2:
-            return "马上完成了！"
-        default:
-            return "做得真好！"
-        }
-    }
-
-    private var message: String {
-        switch completedCount {
-        case 0:
-            return "先完成第一个学习任务，就能获得娱乐时间。"
-        case 1:
-            return "你已经获得 \(gameTimeMinutes) 分钟，继续加油。"
-        case 2:
-            return "再完成一个任务，就能解锁完整奖励。"
-        default:
-            return "今天的任务都完成了，已解锁 \(maxGameTimeMinutes) 分钟。"
-        }
-    }
-
-    var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(completedCount == totalTaskCount ? Color.green.opacity(0.18) : Color.yellow.opacity(0.22))
-                    .frame(width: 52, height: 52)
-
-                Image(systemName: iconName)
-                    .font(.title2)
-                    .foregroundStyle(completedCount == totalTaskCount ? .green : .orange)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .padding()
-        .background(completedCount == totalTaskCount ? Color.green.opacity(0.14) : Color.white.opacity(0.86))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
-        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: completedCount)
     }
 }
 
@@ -913,6 +880,159 @@ struct MinuteWheelRow: View {
     }
 }
 
+struct HourWheelRow: View {
+    let title: String
+    let subtitle: String
+    @Binding var hour: Int
+    var iconName: String = "clock.fill"
+    var tint: Color = .blue
+    @State private var isPresented = false
+    @State private var draftHour = 0
+
+    var body: some View {
+        Button {
+            draftHour = hour
+            isPresented = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: iconName)
+                    .font(.headline)
+                    .foregroundStyle(tint)
+                    .frame(width: 28)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+
+                    if !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                Text(Self.formatHour(hour))
+                    .font(.headline)
+                    .foregroundStyle(tint)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $isPresented) {
+            NavigationStack {
+                Picker(title, selection: $draftHour) {
+                    ForEach(0...23, id: \.self) { value in
+                        Text(Self.formatHour(value)).tag(value)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") {
+                            isPresented = false
+                        }
+                    }
+
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") {
+                            hour = draftHour
+                            isPresented = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.height(320)])
+        }
+    }
+
+    static func formatHour(_ hour: Int) -> String {
+        String(format: "%02d:00", min(max(hour, 0), 23))
+    }
+}
+
+struct ProgressMeter: View {
+    let value: Double
+    let tint: Color
+
+    private var clampedValue: Double {
+        min(max(value, 0), 1)
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.gray.opacity(0.16))
+
+                Capsule()
+                    .fill(tint)
+                    .frame(width: max(8, geometry.size.width * clampedValue))
+            }
+        }
+        .frame(height: 10)
+        .animation(.spring(response: 0.28, dampingFraction: 0.85), value: clampedValue)
+    }
+}
+
+struct MinuteSliderRow: View {
+    let title: String
+    let subtitle: String
+    @Binding var minutes: Int
+    var range: ClosedRange<Double>
+    var step: Double = 5
+    var iconName: String
+    var tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: iconName)
+                    .foregroundStyle(tint)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.headline)
+                    if !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                Text("\(minutes) 分钟")
+                    .font(.headline)
+                    .foregroundStyle(tint)
+                    .monospacedDigit()
+            }
+
+            Slider(
+                value: Binding(
+                    get: { Double(minutes) },
+                    set: { minutes = Int(($0 / step).rounded() * step) }
+                ),
+                in: range,
+                step: step
+            )
+            .tint(tint)
+        }
+        .padding()
+        .background(tint.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
 struct TimeWindowSummaryRow: View {
     let appName: String
     let category: String
@@ -985,6 +1105,37 @@ struct RuleSummaryPill: View {
     }
 }
 
+struct SummaryScoreTile: View {
+    let title: String
+    let value: String
+    let score: Int
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(value)
+                .font(.title2.bold())
+                .monospacedDigit()
+
+            HStack(spacing: 3) {
+                ForEach(1...5, id: \.self) { index in
+                    Image(systemName: index <= score ? "star.fill" : "star")
+                        .font(.caption)
+                        .foregroundStyle(index <= score ? color : Color.gray.opacity(0.35))
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
 struct StatCard: View {
     let title: String
     let value: String
@@ -1033,7 +1184,7 @@ struct RecordRow: View {
                 Text(record.dateKey)
                     .font(.headline)
 
-                Text(AppText.t("completed_count", record.completedCount, 3))
+                Text("完成率 \(record.completionPercent ?? 0)% · 评分 \(record.scoreOneToFive ?? 1)/5")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1065,7 +1216,21 @@ struct RecordDetailView: View {
                 HStack {
                     Text(AppText.t("completed"))
                     Spacer()
-                    Text("\(record.completedCount) / 3")
+                    Text("\(record.completedCount) / \(record.totalTaskCount ?? 3)")
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text("完成率")
+                    Spacer()
+                    Text("\(record.completionPercent ?? 0)%")
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text("评分")
+                    Spacer()
+                    Text("\(record.scoreOneToFive ?? 1) / 5")
                         .foregroundStyle(.secondary)
                 }
 
@@ -1101,39 +1266,14 @@ struct RecordDetailView: View {
     }
 }
 
-struct ScreenTimeSetupStep: View {
-    let number: Int
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text("\(number)")
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(Color.blue)
-                .clipShape(Circle())
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.headline)
-
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-}
-
-struct TaskRuleEditor: View {
+struct TaskRuleEditor<SelectedAppContent: View>: View {
     let taskLetter: String
     @Binding var note: String
     @Binding var weekdays: String
     @Binding var minutes: Int
     @Binding var rewardMinutes: Int
     let color: Color
+    @ViewBuilder let selectedAppContent: () -> SelectedAppContent
     let selectAppAction: () -> Void
 
     private let weekdayItems: [(Int, String)] = [
@@ -1157,6 +1297,16 @@ struct TaskRuleEditor: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+
+            HStack {
+                selectedAppContent()
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .background(color.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
 
             TextField("任务 \(taskLetter) 学习说明", text: $note)
                 .textFieldStyle(.roundedBorder)
@@ -1257,18 +1407,20 @@ struct ContentView: View {
     @AppStorage("entertainmentCarryoverMinutes") private var entertainmentCarryoverMinutes = 0
     @AppStorage("entertainmentBalanceCap") private var entertainmentBalanceCap = 120
     @AppStorage("dailyEarnCapMinutes") private var dailyEarnCapMinutes = 60
-    @AppStorage("dailyUseCapMinutes") private var dailyUseCapMinutes = 45
+    @AppStorage("weekdayEntertainmentLimitMinutes") private var weekdayEntertainmentLimitMinutes = 45
+    @AppStorage("weekendEntertainmentLimitMinutes") private var weekendEntertainmentLimitMinutes = 120
     @AppStorage("allowEntertainmentCarryover") private var allowEntertainmentCarryover = true
     @AppStorage("weekdayVideoLimitMinutes") private var weekdayVideoLimitMinutes = 30
     @AppStorage("weekendVideoLimitMinutes") private var weekendVideoLimitMinutes = 60
     @AppStorage("weekdayGameLimitMinutes") private var weekdayGameLimitMinutes = 20
     @AppStorage("weekendGameCombinedLimitMinutes") private var weekendGameCombinedLimitMinutes = 90
-    @AppStorage("coreLearningAppSlots") private var coreLearningAppSlots = 8
-    @AppStorage("coreEntertainmentAppSlots") private var coreEntertainmentAppSlots = 8
+    @AppStorage("entertainmentWeekdayStartHour") private var entertainmentWeekdayStartHour = 18
+    @AppStorage("entertainmentWeekdayEndHour") private var entertainmentWeekdayEndHour = 21
+    @AppStorage("entertainmentWeekendStartHour") private var entertainmentWeekendStartHour = 8
+    @AppStorage("entertainmentWeekendEndHour") private var entertainmentWeekendEndHour = 22
     @AppStorage("movementExemptionRequested") private var movementExemptionRequested = false
     @AppStorage("movementExemptionApproved") private var movementExemptionApproved = false
     @AppStorage("movementExemptionReason") private var movementExemptionReason = "天气"
-    @AppStorage("movementMakeupMinutes") private var movementMakeupMinutes = 0
     @AppStorage("parentBindingCode") private var parentBindingCode = "BD-482913"
 
     @State private var parentPINInput = ""
@@ -1276,6 +1428,17 @@ struct ContentView: View {
     @State private var isParentUnlocked = false
     @State private var parentPINError = ""
     @State private var selectedTab = 0
+    @State private var taskSelectionLimitMessage = ""
+    @State private var parentLastActivityDate = Date()
+    @State private var feedbackType = "功能建议"
+    @State private var feedbackMessage = ""
+    @State private var feedbackContact = ""
+    @State private var feedbackScreenshotItem: PhotosPickerItem?
+    @State private var feedbackScreenshotAttached = false
+    @State private var feedbackStatusMessage = ""
+
+    private let parentAutoLockSeconds: TimeInterval = 60
+    private let parentAutoLockTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
     private let maximumTaskCount = 8
 
@@ -1308,13 +1471,108 @@ struct ContentView: View {
         (0..<enabledTaskCount).filter { taskIsScheduledToday($0) }.count
     }
 
+    private var totalTodayTaskCount: Int {
+        activeTodayTaskCount + 1
+    }
+
     private var completedCount: Int {
         (0..<enabledTaskCount).filter { taskIsScheduledToday($0) && taskCompleted($0) }.count
+    }
+
+    private var completedTodayTaskCount: Int {
+        completedCount + (movementTaskCompletedToday ? 1 : 0)
+    }
+
+    private var todayCompletionPercent: Int {
+        percent(completedTodayTaskCount, of: max(totalTodayTaskCount, 1))
+    }
+
+    private var todayScoreOneToFive: Int {
+        scoreOneToFive(for: todayCompletionPercent)
+    }
+
+    private var isWeekendToday: Bool {
+        todayWeekday == 1 || todayWeekday == 7
+    }
+
+    private var todayEntertainmentLimitMinutes: Int {
+        isWeekendToday ? weekendEntertainmentLimitMinutes : weekdayEntertainmentLimitMinutes
+    }
+
+    private var todayAvailableEntertainmentMinutes: Int {
+        min(entertainmentBalanceMinutes, todayEntertainmentLimitMinutes)
     }
 
     private var enabledTaskCount: Int {
         min(max(requiredLearningAppCount, 1), maximumTaskCount)
     }
+
+    private var parentRuleActivityKey: String {
+        [
+            childName, mathNote, englishNote, readingNote, taskDNote, taskENote, taskFNote, taskGNote, taskHNote,
+            taskAWeekdays, taskBWeekdays, taskCWeekdays, taskDWeekdays, taskEWeekdays, taskFWeekdays, taskGWeekdays, taskHWeekdays,
+            String(requiredLearningAppCount), String(mathMinutes), String(englishMinutes), String(readingMinutes),
+            String(taskDMinutes), String(taskEMinutes), String(taskFMinutes), String(taskGMinutes), String(taskHMinutes),
+            String(taskARewardMinutes), String(taskBRewardMinutes), String(taskCRewardMinutes), String(taskDRewardMinutes),
+            String(taskERewardMinutes), String(taskFRewardMinutes), String(taskGRewardMinutes), String(taskHRewardMinutes),
+            String(movementStartHour), String(movementEndHour), String(movementTargetMinutes), String(movementRewardMinutes),
+            movementActivityType, String(entertainmentCarryoverMinutes), String(entertainmentBalanceCap),
+            String(dailyEarnCapMinutes), String(allowEntertainmentCarryover),
+            String(weekdayEntertainmentLimitMinutes), String(weekendEntertainmentLimitMinutes),
+            String(weekdayVideoLimitMinutes), String(weekendVideoLimitMinutes), String(weekdayGameLimitMinutes),
+            String(weekendGameCombinedLimitMinutes), String(entertainmentWeekdayStartHour), String(entertainmentWeekdayEndHour),
+            String(entertainmentWeekendStartHour), String(entertainmentWeekendEndHour),
+            String(movementExemptionApproved), movementExemptionReason, parentPIN
+        ].joined(separator: "|")
+    }
+
+    #if canImport(FamilyControls)
+    private func taskActivitySelection(_ index: Int) -> FamilyActivitySelection {
+        switch index {
+        case 0: return taskAActivitySelection
+        case 1: return taskBActivitySelection
+        case 2: return taskCActivitySelection
+        case 3: return taskDActivitySelection
+        case 4: return taskEActivitySelection
+        case 5: return taskFActivitySelection
+        case 6: return taskGActivitySelection
+        default: return taskHActivitySelection
+        }
+    }
+
+    private func setTaskActivitySelection(_ selection: FamilyActivitySelection, for index: Int) {
+        switch index {
+        case 0: taskAActivitySelection = selection
+        case 1: taskBActivitySelection = selection
+        case 2: taskCActivitySelection = selection
+        case 3: taskDActivitySelection = selection
+        case 4: taskEActivitySelection = selection
+        case 5: taskFActivitySelection = selection
+        case 6: taskGActivitySelection = selection
+        default: taskHActivitySelection = selection
+        }
+    }
+
+    private func limitTaskActivitySelection(_ index: Int) {
+        let selection = taskActivitySelection(index)
+        let isValidSingleApp = selection.applicationTokens.count == 1 &&
+            selection.categoryTokens.isEmpty &&
+            selection.webDomainTokens.isEmpty
+        let shouldReject = selection.applicationTokens.count > 1 ||
+            !selection.categoryTokens.isEmpty ||
+            !selection.webDomainTokens.isEmpty
+        guard !isValidSingleApp && shouldReject else { return }
+
+        setTaskActivitySelection(FamilyActivitySelection(), for: index)
+        taskSelectionLimitMessage = "任务 \(taskLetter(index)) 只能选择一个具体 APP。请重新进入选择器，只点选一个 APP，不要选择分类或网页。"
+    }
+
+    private func taskSelectionValidationKey(_ index: Int) -> String {
+        let selection = taskActivitySelection(index)
+        return "\(selection.applicationTokens.count)-\(selection.categoryTokens.count)-\(selection.webDomainTokens.count)"
+    }
+
+    #endif
 
     private var gameTimeMinutes: Int {
         let taskRewards = (0..<enabledTaskCount).reduce(0) { total, index in
@@ -1385,6 +1643,69 @@ struct ContentView: View {
         }
     }
 
+    private func taskMinutes(_ index: Int) -> Int {
+        switch index {
+        case 0: return mathMinutes
+        case 1: return englishMinutes
+        case 2: return readingMinutes
+        case 3: return taskDMinutes
+        case 4: return taskEMinutes
+        case 5: return taskFMinutes
+        case 6: return taskGMinutes
+        default: return taskHMinutes
+        }
+    }
+
+    private func taskLetter(_ index: Int) -> String {
+        ["A", "B", "C", "D", "E", "F", "G", "H"][min(max(index, 0), 7)]
+    }
+
+    private func entertainmentWindowText(start: Int, end: Int) -> String {
+        let startText = HourWheelRow.formatHour(start)
+        let endText = HourWheelRow.formatHour(end)
+        return end <= start ? "\(startText)-次日 \(endText)" : "\(startText)-\(endText)"
+    }
+
+    private func percent(_ completed: Int, of total: Int) -> Int {
+        guard total > 0 else { return 0 }
+        return Int((Double(completed) / Double(total) * 100).rounded())
+    }
+
+    private func scoreOneToFive(for percent: Int) -> Int {
+        switch percent {
+        case 0...20: return 1
+        case 21...40: return 2
+        case 41...60: return 3
+        case 61...80: return 4
+        default: return 5
+        }
+    }
+
+    private func recordsCompletionPercent(_ records: [DailyRecord]) -> Int {
+        guard !records.isEmpty else { return 0 }
+        let completed = records.reduce(0) { $0 + $1.completedCount }
+        let total = records.reduce(0) { $0 + ($1.totalTaskCount ?? 3) }
+        return percent(completed, of: max(total, 1))
+    }
+
+    @ViewBuilder
+    private func taskSelectedAppLabel(_ index: Int) -> some View {
+        #if canImport(FamilyControls)
+        if let token = taskActivitySelection(index).applicationTokens.first {
+            Label(token)
+                .font(.subheadline.weight(.semibold))
+        } else {
+            Label("未选择 APP", systemImage: "app.dashed")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        #else
+        Label("未选择 APP", systemImage: "app.dashed")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        #endif
+    }
+
     private func taskWeekdays(_ index: Int) -> String {
         switch index {
         case 0: return taskAWeekdays
@@ -1420,6 +1741,10 @@ struct ContentView: View {
         movementProgressMinutes >= movementTargetMinutes
     }
 
+    private var movementTaskCompletedToday: Bool {
+        movementGoalCompleted || movementIsExcusedToday
+    }
+
     private var movementRewardMinutesEarned: Int {
         movementGoalCompleted ? movementRewardMinutes : 0
     }
@@ -1438,6 +1763,57 @@ struct ContentView: View {
 
     private var lastSevenRecords: [DailyRecord] {
         Array(dailyRecords.prefix(7))
+    }
+
+    private var previousSevenRecords: [DailyRecord] {
+        Array(dailyRecords.dropFirst(7).prefix(7))
+    }
+
+    private var weeklyCompletionPercent: Int {
+        recordsCompletionPercent(lastSevenRecords)
+    }
+
+    private var previousWeeklyCompletionPercent: Int {
+        recordsCompletionPercent(previousSevenRecords)
+    }
+
+    private var weeklyScoreOneToFive: Int {
+        scoreOneToFive(for: weeklyCompletionPercent)
+    }
+
+    private var weeklyComparePercent: Int {
+        weeklyCompletionPercent - previousWeeklyCompletionPercent
+    }
+
+    private var dailySummaryText: String {
+        "今日完成率 \(todayCompletionPercent)%，评分 \(todayScoreOneToFive)/5。已解锁 \(gameTimeMinutes) 分钟娱乐时间，今日最多可用 \(todayAvailableEntertainmentMinutes) 分钟。"
+    }
+
+    private var weeklySummaryText: String {
+        let compareText: String
+        if previousSevenRecords.isEmpty {
+            compareText = "暂无上周数据可比较。"
+        } else if weeklyComparePercent > 0 {
+            compareText = "比上周提高 \(weeklyComparePercent)%。"
+        } else if weeklyComparePercent < 0 {
+            compareText = "比上周下降 \(abs(weeklyComparePercent))%。"
+        } else {
+            compareText = "与上周持平。"
+        }
+        return "本周完成率 \(weeklyCompletionPercent)%，评分 \(weeklyScoreOneToFive)/5。\(compareText)"
+    }
+
+    private var screenTimePermissionStatusText: String {
+        switch screenTimeManager.authorizationState {
+        case .approved:
+            return "已开启"
+        case .notDetermined:
+            return "未开启"
+        case .denied:
+            return "开启失败"
+        case .unavailable:
+            return "当前构建不可用"
+        }
     }
 
     private var lastSevenGameMinutes: Int {
@@ -1524,6 +1900,24 @@ struct ContentView: View {
         .onChange(of: taskGCompleted) { _ in updateTodayProgress() }
         .onChange(of: taskHCompleted) { _ in updateTodayProgress() }
         .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
+        .onChange(of: selectedTab) { _ in
+            if selectedTab == 1 {
+                resetParentAutoLockTimer()
+            } else {
+                lockParentArea()
+            }
+        }
+        .onChange(of: isParentUnlocked) { _ in
+            if isParentUnlocked {
+                resetParentAutoLockTimer()
+            }
+        }
+        .onChange(of: parentRuleActivityKey) { _ in
+            resetParentAutoLockTimer()
+        }
+        .onReceive(parentAutoLockTimer) { _ in
+            autoLockParentAreaIfNeeded()
+        }
         #if canImport(FamilyControls)
         .familyActivityPicker(isPresented: $isTaskAPickerPresented, selection: $taskAActivitySelection)
         .familyActivityPicker(isPresented: $isTaskBPickerPresented, selection: $taskBActivitySelection)
@@ -1534,20 +1928,39 @@ struct ContentView: View {
         .familyActivityPicker(isPresented: $isTaskGPickerPresented, selection: $taskGActivitySelection)
         .familyActivityPicker(isPresented: $isTaskHPickerPresented, selection: $taskHActivitySelection)
         .familyActivityPicker(isPresented: $isEntertainmentPickerPresented, selection: $entertainmentActivitySelection)
+        .onChange(of: taskSelectionValidationKey(0)) { _ in limitTaskActivitySelection(0) }
+        .onChange(of: taskSelectionValidationKey(1)) { _ in limitTaskActivitySelection(1) }
+        .onChange(of: taskSelectionValidationKey(2)) { _ in limitTaskActivitySelection(2) }
+        .onChange(of: taskSelectionValidationKey(3)) { _ in limitTaskActivitySelection(3) }
+        .onChange(of: taskSelectionValidationKey(4)) { _ in limitTaskActivitySelection(4) }
+        .onChange(of: taskSelectionValidationKey(5)) { _ in limitTaskActivitySelection(5) }
+        .onChange(of: taskSelectionValidationKey(6)) { _ in limitTaskActivitySelection(6) }
+        .onChange(of: taskSelectionValidationKey(7)) { _ in limitTaskActivitySelection(7) }
         #endif
+        .alert("选择过多", isPresented: Binding(
+            get: { !taskSelectionLimitMessage.isEmpty },
+            set: { isPresented in
+                if !isPresented {
+                    taskSelectionLimitMessage = ""
+                }
+            }
+        )) {
+            Button("知道了", role: .cancel) {
+                taskSelectionLimitMessage = ""
+            }
+        } message: {
+            Text(taskSelectionLimitMessage)
+        }
     }
 
     private var todayView: some View {
         VStack(alignment: .leading, spacing: 22) {
             headerView
-            todayRulesShortcutCard
-            streakCard
-            encouragementView
-            gameSummaryView
             taskListView
             movementWindowSummaryCard
+            todayEntertainmentStatusCard
+            completionSummaryCard
             movementExemptionCard
-            progressView
             resetButton
         }
         .padding()
@@ -1560,30 +1973,11 @@ struct ContentView: View {
                     .font(.largeTitle)
                     .bold()
 
-                Text("选择核心管控 APP。学习和娱乐的详细规则放在“规则设定”里统一管理。")
+                Text("选择娱乐应用，并把学习任务对应到具体 APP。")
                     .foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 12) {
-                StatCard(
-                    title: "学习核心",
-                    value: "\(coreLearningAppSlots)",
-                    subtitle: "个 APP",
-                    color: .purple,
-                    iconName: "checklist"
-                )
-
-                StatCard(
-                    title: "娱乐核心",
-                    value: "\(coreEntertainmentAppSlots)",
-                    subtitle: "个 APP",
-                    color: .blue,
-                    iconName: "gamecontroller.fill"
-                )
-            }
-
             appSelectionCard
-            coreAppPolicyCard
             screenTimeControlCard
         }
         .padding()
@@ -1637,13 +2031,17 @@ struct ContentView: View {
                 Image(systemName: "lock.shield.fill")
                     .foregroundStyle(.blue)
 
-                Text(AppText.t("screen_time_api"))
+                Text("App 管控权限")
                     .font(.headline)
             }
 
-            Text(AppText.t("authorization", screenTimeManager.authorizationState.localizedName))
+            Text("开启后，BetterDay 才能选择和限制娱乐、游戏 APP。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            Label(screenTimePermissionStatusText, systemImage: screenTimeManager.authorizationState == .approved ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(screenTimeManager.authorizationState.color)
 
             Button {
                 Task {
@@ -1651,7 +2049,7 @@ struct ContentView: View {
                     applyScreenTimeLimit()
                 }
             } label: {
-                Label(AppText.t("request_screen_time_permission"), systemImage: "hand.raised.fill")
+                Label("开启 App 管控权限", systemImage: "person.badge.key.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -1659,22 +2057,16 @@ struct ContentView: View {
             Button {
                 applyScreenTimeLimit()
             } label: {
-                Label(gameTimeMinutes > 0 ? AppText.t("apply_earned_unlock") : AppText.t("lock_entertainment_apps"), systemImage: gameTimeMinutes > 0 ? "lock.open.fill" : "lock.fill")
+                Label("应用当前规则", systemImage: "slider.horizontal.3")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
 
-            Button {
-                screenTimeManager.clearRestrictions()
-            } label: {
-                Label(AppText.t("clear_screen_time_restrictions"), systemImage: "xmark.shield")
-                    .frame(maxWidth: .infinity)
+            if screenTimeManager.authorizationState == .denied || screenTimeManager.authorizationState == .unavailable {
+                Text("开启失败时，请确认在 iPhone 真机上允许屏幕使用时间权限。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.bordered)
-
-            Text(screenTimeManager.statusMessage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1748,9 +2140,11 @@ struct ContentView: View {
             Text(AppText.t("movement_window_line", movementStartHour, movementEndHour, movementTargetMinutes, localizedMovementActivityType))
                 .font(.subheadline)
 
-            Text(movementIsExcusedToday ? "今日已豁免：\(movementExemptionReason)。不奖励娱乐时间，但不破坏连续记录。" : AppText.t("movement_progress_line", movementProgressMinutes, movementTargetMinutes, movementRewardMinutesEarned))
+            Text(movementIsExcusedToday ? "今日已延期运动：不奖励娱乐时间，但不破坏连续记录。" : AppText.t("movement_progress_line", movementProgressMinutes, movementTargetMinutes, movementRewardMinutesEarned))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            ProgressMeter(value: Double(min(movementProgressMinutes, movementTargetMinutes)) / Double(max(movementTargetMinutes, 1)), tint: .green)
 
             Button {
                 Task {
@@ -1775,27 +2169,21 @@ struct ContentView: View {
                 Image(systemName: "figure.run.square.stack.fill")
                     .foregroundStyle(.green)
 
-                Text("运动豁免与补做")
+                Text("运动延期与周末补回")
                     .font(.headline)
             }
 
-            Text(movementExemptionRequested ? (movementExemptionApproved ? "家长已批准今日运动豁免。" : "豁免申请已提交，等待家长批准。") : "遇到天气、疾病、旅行等特殊情况，可以申请豁免。")
+            Text(movementExemptionRequested ? "今日已延期运动：今天不发运动奖励，但不打断连续记录。周末补回时按折扣补发娱乐时间。" : "今天确实不适合运动时，可以选择延期到周末补回。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-
-            if movementMakeupMinutes > 0 {
-                Text("待补做运动：\(movementMakeupMinutes) 分钟")
-                    .font(.headline)
-                    .foregroundStyle(.orange)
-            }
 
             HStack {
                 Button {
                     movementExemptionRequested = true
-                    movementExemptionApproved = false
-                    movementExemptionReason = "天气"
+                    movementExemptionApproved = true
+                    movementExemptionReason = "延期"
                 } label: {
-                    Label("申请豁免", systemImage: "paperplane.fill")
+                    Label("今日延期运动", systemImage: "calendar.badge.clock")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -1804,7 +2192,7 @@ struct ContentView: View {
                     movementExemptionRequested = false
                     movementExemptionApproved = false
                 } label: {
-                    Label("撤回", systemImage: "arrow.uturn.backward")
+                    Label("取消延期", systemImage: "arrow.uturn.backward")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -1916,10 +2304,71 @@ struct ContentView: View {
 
             childProfileCard
             bindingCard
+            feedbackCard
             accountModeCard
             cloudSyncCard
         }
         .padding()
+    }
+
+    private var feedbackCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                    .foregroundStyle(.blue)
+
+                Text("我要反馈")
+                    .font(.headline)
+            }
+
+            Text("告诉我们哪里不好用，或者你希望 BetterDay 增加什么。截图可能包含个人信息，请确认后再上传。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Picker("反馈类型", selection: $feedbackType) {
+                Text("功能建议").tag("功能建议")
+                Text("使用问题").tag("使用问题")
+                Text("Bug 反馈").tag("Bug 反馈")
+                Text("同步问题").tag("同步问题")
+                Text("其他").tag("其他")
+            }
+            .pickerStyle(.menu)
+
+            TextField("反馈内容", text: $feedbackMessage, axis: .vertical)
+                .lineLimit(3...6)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("联系方式，可选", text: $feedbackContact)
+                .textFieldStyle(.roundedBorder)
+
+            PhotosPicker(selection: $feedbackScreenshotItem, matching: .images) {
+                Label(feedbackScreenshotAttached ? "已添加截图" : "添加截图", systemImage: "photo")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .onChange(of: feedbackScreenshotItem) { _ in
+                feedbackScreenshotAttached = feedbackScreenshotItem != nil
+            }
+
+            Button {
+                submitFeedback()
+            } label: {
+                Label("提交反馈", systemImage: "paperplane.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            if !feedbackStatusMessage.isEmpty {
+                Text(feedbackStatusMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var bindingCard: some View {
@@ -1991,53 +2440,30 @@ struct ContentView: View {
     private var parentView: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text("规则设定")
-                    .font(.largeTitle)
+                Text("请选择已安装的娱乐和游戏 APP")
+                    .font(.title2)
                     .bold()
                     .foregroundStyle(Color(red: 0.10, green: 0.14, blue: 0.22))
 
                 Spacer()
 
                 Button(AppText.t("lock")) {
-                    isParentUnlocked = false
-                    parentPINInput = ""
-                    parentPINError = ""
+                    lockParentArea()
                 }
                 .buttonStyle(.bordered)
             }
 
-            Text("制定每周学习、运动和娱乐使用规则。规则先在本机生效，后续可同步到家长端与孩子端。")
-                .foregroundStyle(.secondary)
+            entertainmentWindowCard
+            entertainmentTotalLimitCard
 
-            HStack(spacing: 12) {
-                StatCard(
-                    title: "娱乐余额",
-                    value: "\(entertainmentBalanceMinutes)",
-                    subtitle: "分钟可用",
-                    color: .orange,
-                    iconName: "banknote.fill"
-                )
-
-                StatCard(
-                    title: "每日上限",
-                    value: "\(dailyUseCapMinutes)",
-                    subtitle: "分钟",
-                    color: .blue,
-                    iconName: "hourglass"
-                )
-            }
-
-            ruleOverviewCard
             parentTaskSettingsCard
             weeklyPlanPreviewCard
             parentRewardSettingsCard
+            completionSummaryCard
             parentMovementSettingsCard
             movementExemptionApprovalCard
             entertainmentBalanceRuleCard
             entertainmentCategoryLimitCard
-            coreAppPolicyCard
-            entertainmentWindowCard
-            parentControlCard
             cloudSyncCard
             parentPINCard
             securityRecoveryCard
@@ -2045,6 +2471,16 @@ struct ContentView: View {
             Spacer(minLength: 20)
         }
         .padding()
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                resetParentAutoLockTimer()
+            }
+        )
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0).onChanged { _ in
+                resetParentAutoLockTimer()
+            }
+        )
     }
 
     private var parentLockView: some View {
@@ -2103,9 +2539,30 @@ struct ContentView: View {
         }
     }
 
-    private var todayRulesShortcutCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private var todayEntertainmentStatusCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
+                Image(systemName: "lock.open.fill")
+                    .foregroundStyle(.orange)
+
+                Text("今日可解锁娱乐时间")
+                    .font(.headline)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("已解锁 \(gameTimeMinutes) / \(maxGameTimeMinutes) 分钟")
+                        .font(.headline)
+                    Spacer()
+                    Text("\(todayCompletionPercent)%")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+
+                ProgressMeter(value: maxGameTimeMinutes == 0 ? 0 : Double(gameTimeMinutes) / Double(maxGameTimeMinutes), tint: .orange)
+            }
+
+            HStack(spacing: 12) {
                 RuleSummaryPill(
                     title: "娱乐余额",
                     value: "\(entertainmentBalanceMinutes) 分钟",
@@ -2114,79 +2571,50 @@ struct ContentView: View {
                 )
 
                 RuleSummaryPill(
-                    title: "今日上限",
-                    value: "\(dailyUseCapMinutes) 分钟",
+                    title: isWeekendToday ? "周末上限" : "工作日上限",
+                    value: "\(todayEntertainmentLimitMinutes) 分钟",
                     iconName: "hourglass",
                     color: .purple
                 )
             }
 
-            Button {
-                selectedTab = 1
-            } label: {
-                Label("查看或调整规则设定", systemImage: "slider.horizontal.3")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-        }
-    }
-
-    private var streakCard: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "flame.fill")
-                .font(.title)
-                .foregroundStyle(.orange)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(AppText.t("continuous_learning"))
-                    .font(.headline)
-
-                Text(AppText.t("day_streak", currentStreak))
-                    .font(.title3)
-                    .bold()
-            }
-
-            Spacer()
+            Text("今日最多可用 \(todayAvailableEntertainmentMinutes) 分钟。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
         .padding()
-        .background(Color.orange.opacity(0.12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var gameSummaryView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(allTasksCompleted ? "娱乐时间已解锁" : "娱乐时间待解锁")
-                .font(.title2)
-                .bold()
-                .foregroundStyle(allTasksCompleted ? .green : .red)
+    private var completionSummaryCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "chart.bar.doc.horizontal.fill")
+                    .foregroundStyle(.indigo)
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(entertainmentBalanceMinutes)")
-                    .font(.system(size: 56, weight: .bold, design: .rounded))
-
-                Text("分钟可用")
+                Text("完成情况总结")
                     .font(.headline)
-                    .foregroundStyle(.secondary)
             }
 
-            Text("今日已获得 \(gameTimeMinutes) 分钟，余额上限 \(entertainmentBalanceCap) 分钟。")
-                .font(.headline)
+            HStack(spacing: 12) {
+                SummaryScoreTile(title: "今日完成率", value: "\(todayCompletionPercent)%", score: todayScoreOneToFive, color: .blue)
+                SummaryScoreTile(title: "本周完成率", value: "\(weeklyCompletionPercent)%", score: weeklyScoreOneToFive, color: .green)
+            }
+
+            Text(dailySummaryText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text(weeklySummaryText)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-        .padding(22)
+        .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.94))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
-    }
-
-    private var encouragementView: some View {
-        EncouragementCard(
-            completedCount: completedCount,
-            totalTaskCount: enabledTaskCount,
-            gameTimeMinutes: gameTimeMinutes,
-            maxGameTimeMinutes: maxGameTimeMinutes
-        )
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var taskListView: some View {
@@ -2299,137 +2727,6 @@ struct ContentView: View {
         }
     }
 
-    private var progressView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(AppText.t("daily_progress"))
-                .font(.headline)
-
-            ProgressView(value: Double(completedCount), total: Double(max(activeTodayTaskCount, 1)))
-                .tint(allTasksCompleted ? .green : .blue)
-
-            Text("每个任务按家长设置的学习日、学习时长和奖励规则计算娱乐时间。")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .padding()
-        .background(Color.white.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private var parentControlCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "lock.shield")
-                    .foregroundStyle(.blue)
-
-                Text(AppText.t("screen_time_api"))
-                    .font(.headline)
-            }
-
-            Text(AppText.t("authorization", screenTimeManager.authorizationState.localizedName))
-                .font(.subheadline)
-                .foregroundStyle(screenTimeManager.authorizationState.color)
-
-            Text(AppText.t("current_earned_limit", gameTimeMinutes))
-                .font(.headline)
-
-            Text(screenTimeManager.statusMessage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
-            Button {
-                Task {
-                    await screenTimeManager.requestAuthorization()
-                }
-            } label: {
-                Label(AppText.t("request_screen_time_permission"), systemImage: "person.badge.key.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-
-            #if canImport(FamilyControls)
-            Button {
-                screenTimeManager.statusMessage = AppText.t("opening_picker")
-                isEntertainmentPickerPresented = true
-            } label: {
-                Label(AppText.t("choose_entertainment_apps"), systemImage: "gamecontroller.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            #else
-            Text(AppText.t("picker_unavailable"))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            #endif
-
-            Button {
-                applyScreenTimeLimit()
-            } label: {
-                Label(AppText.t("apply_earned_limit"), systemImage: "checkmark.shield.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-
-            Button(role: .destructive) {
-                screenTimeManager.clearRestrictions()
-            } label: {
-                Label(AppText.t("clear_screen_time_restrictions"), systemImage: "xmark.shield.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .foregroundStyle(Color(red: 0.10, green: 0.14, blue: 0.22))
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: .black.opacity(0.08), radius: 14, y: 7)
-    }
-
-    private var screenTimeSetupCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Image(systemName: "iphone.and.arrow.forward")
-                    .foregroundStyle(.blue)
-
-                Text(AppText.t("setup_screen_time"))
-                    .font(.headline)
-            }
-
-            Text(AppText.t("setup_screen_time_subtitle"))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            ScreenTimeSetupStep(
-                number: 1,
-                title: AppText.t("request_permission"),
-                description: AppText.t("request_permission_desc")
-            )
-
-            ScreenTimeSetupStep(
-                number: 2,
-                title: AppText.t("select_apps"),
-                description: AppText.t("select_apps_desc")
-            )
-
-            ScreenTimeSetupStep(
-                number: 3,
-                title: AppText.t("apply_limit"),
-                description: AppText.t("apply_limit_desc")
-            )
-
-            ScreenTimeSetupStep(
-                number: 4,
-                title: AppText.t("monitor_usage"),
-                description: AppText.t("monitor_usage_desc")
-            )
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
     private var parentMovementCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -2523,7 +2820,14 @@ struct ContentView: View {
             gameTimeMinutes: gameTimeMinutes,
             mathMinutes: mathMinutes,
             englishMinutes: englishMinutes,
-            readingMinutes: readingMinutes
+            readingMinutes: readingMinutes,
+            dailyCompletionPercent: todayCompletionPercent,
+            dailyScoreOneToFive: todayScoreOneToFive,
+            dailySummary: dailySummaryText,
+            weeklyCompletionPercent: weeklyCompletionPercent,
+            weeklyScoreOneToFive: weeklyScoreOneToFive,
+            weeklyComparePercent: weeklyComparePercent,
+            weeklySummary: weeklySummaryText
         )
 
         Task {
@@ -2537,7 +2841,14 @@ struct ContentView: View {
                 gameTimeMinutes: snapshot.gameTimeMinutes,
                 mathMinutes: snapshot.mathMinutes,
                 englishMinutes: snapshot.englishMinutes,
-                readingMinutes: snapshot.readingMinutes
+                readingMinutes: snapshot.readingMinutes,
+                dailyCompletionPercent: snapshot.dailyCompletionPercent,
+                dailyScoreOneToFive: snapshot.dailyScoreOneToFive,
+                dailySummary: snapshot.dailySummary,
+                weeklyCompletionPercent: snapshot.weeklyCompletionPercent,
+                weeklyScoreOneToFive: snapshot.weeklyScoreOneToFive,
+                weeklyComparePercent: snapshot.weeklyComparePercent,
+                weeklySummary: snapshot.weeklySummary
             )
         }
     }
@@ -2582,31 +2893,6 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var ruleOverviewCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "list.bullet.rectangle.portrait.fill")
-                    .foregroundStyle(.blue)
-
-                Text("规则总览")
-                    .font(.headline)
-            }
-
-            Text("当前采用“核心管控 APP + 全局统计”策略：重点限制最容易沉迷的 APP，其他 APP 先做统计和分类分析，降低设置门槛。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 10) {
-                RuleSummaryPill(title: "学习 APP", value: "\(coreLearningAppSlots) 个核心", iconName: "book.closed.fill", color: .purple)
-                RuleSummaryPill(title: "娱乐 APP", value: "\(coreEntertainmentAppSlots) 个核心", iconName: "gamecontroller.fill", color: .blue)
-            }
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
     private var weeklyPlanPreviewCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -2617,13 +2903,23 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("A 应用：周一、周三、周五各 \(mathMinutes) 分钟")
-            Text("B 应用：周一到周五各 \(englishMinutes) 分钟")
-            Text("C 应用：周六、周日各 \(readingMinutes) 分钟")
+            ForEach(0..<enabledTaskCount, id: \.self) { index in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text("任务 \(taskLetter(index))")
+                            .font(.subheadline.weight(.semibold))
+                        taskSelectedAppLabel(index)
+                    }
+                    Text("\(taskScheduleText(index))，每日 \(taskMinutes(index)) 分钟，完成奖励 \(taskRewardMinutes(index)) 分钟")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Text("运动：每日 \(movementTargetMinutes) 分钟，完成奖励 \(movementRewardMinutes) 分钟")
                 .foregroundStyle(.secondary)
 
-            Text("下一步会把这里升级成周一到周日的可编辑表格，每个格子点开都是滚轮。")
+            Text("这里会随任务学习日、学习时长和奖励设置实时更新。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -2636,30 +2932,20 @@ struct ContentView: View {
     private var movementExemptionApprovalCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "checkmark.seal.fill")
-                    .foregroundStyle(.green)
+                Image(systemName: "calendar.badge.clock")
+                    .foregroundStyle(.orange)
 
-                Text("运动豁免审批")
+                Text("运动延期与周末补回")
                     .font(.headline)
             }
 
-            Text(movementExemptionRequested ? "收到豁免申请：\(movementExemptionReason)。批准后今日不奖励娱乐时间，但不破坏连续记录。" : "暂无运动豁免申请。")
+            Text("孩子可以自己选择今日延期运动。延期当天不发运动奖励、不打断连续记录；周末补回时按折扣补发娱乐时间。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Picker("豁免原因", selection: $movementExemptionReason) {
-                Text("天气").tag("天气")
-                Text("疾病").tag("疾病")
-                Text("旅行").tag("旅行")
-                Text("受伤").tag("受伤")
-                Text("考试").tag("考试")
-            }
-            .pickerStyle(.segmented)
-
-            Toggle("批准今日豁免", isOn: $movementExemptionApproved)
-                .disabled(!movementExemptionRequested)
-
-            MinuteWheelRow(title: "待补做运动", subtitle: "用于防作弊和补回规则严肃性", minutes: $movementMakeupMinutes, range: 0...180, step: 5, iconName: "arrow.triangle.2.circlepath", tint: .orange)
+            Text(movementExemptionRequested ? "今日状态：已延期运动。" : "今日状态：未延期。")
+                .font(.headline)
+                .foregroundStyle(movementExemptionRequested ? .orange : .secondary)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2677,7 +2963,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("娱乐时间像余额一样管理。未用完的时间可以按规则清零或累积，但必须设置上限。")
+            Text("孩子完成任务赚到的娱乐时间会进入余额。实际可用时间还会受到工作日/周末总上限和可用时段限制。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2698,7 +2984,46 @@ struct ContentView: View {
             Toggle("允许未用完时间累积", isOn: $allowEntertainmentCarryover)
             MinuteWheelRow(title: "当前结余", subtitle: "模拟余额，后续接入真实使用扣减", minutes: $entertainmentCarryoverMinutes, range: 0...300, step: 5, iconName: "tray.full.fill", tint: .blue)
             MinuteWheelRow(title: "总余额上限", subtitle: "避免无限攒时间", minutes: $entertainmentBalanceCap, range: 30...600, step: 10, iconName: "lock.fill", tint: .purple)
-            MinuteWheelRow(title: "每日最多可使用", subtitle: "即使有余额，也不能无限使用", minutes: $dailyUseCapMinutes, range: 10...240, step: 5, iconName: "hourglass", tint: .orange)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var entertainmentTotalLimitCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "speedometer")
+                    .foregroundStyle(.orange)
+
+                Text("娱乐总上限")
+                    .font(.headline)
+            }
+
+            Text("总上限是所有娱乐和游戏 APP 的合计可用时间，优先级高于视频/游戏分类上限。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            MinuteSliderRow(
+                title: "工作日娱乐上限",
+                subtitle: "周一到周五，所有娱乐和游戏 APP 合计最多可用时间",
+                minutes: $weekdayEntertainmentLimitMinutes,
+                range: 0...180,
+                step: 5,
+                iconName: "calendar",
+                tint: .orange
+            )
+
+            MinuteSliderRow(
+                title: "周末娱乐上限",
+                subtitle: "周六、周日，所有娱乐和游戏 APP 合计最多可用时间",
+                minutes: $weekendEntertainmentLimitMinutes,
+                range: 0...360,
+                step: 5,
+                iconName: "calendar.badge.clock",
+                tint: .purple
+            )
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2731,29 +3056,6 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var coreAppPolicyCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Image(systemName: "app.badge.checkmark.fill")
-                    .foregroundStyle(.purple)
-
-                Text("核心管控 APP")
-                    .font(.headline)
-            }
-
-            Text("不用强迫家长配置所有 APP。重点管控最容易沉迷的核心 APP，其他应用进入全局统计。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Stepper("核心学习 APP：\(coreLearningAppSlots) 个", value: $coreLearningAppSlots, in: 1...12, step: 1)
-            Stepper("核心娱乐 APP：\(coreEntertainmentAppSlots) 个", value: $coreEntertainmentAppSlots, in: 1...12, step: 1)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
     private var entertainmentWindowCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -2764,15 +3066,20 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("示例规则先落地为摘要，后续可进入每个 APP 的详情页编辑多个时段。")
+            Text("点击时间可用轮盘调整。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            HourWheelRow(title: "工作日开始", subtitle: "周一到周五", hour: $entertainmentWeekdayStartHour, iconName: "sun.max.fill", tint: .teal)
+            HourWheelRow(title: "工作日结束", subtitle: "到点自动锁定", hour: $entertainmentWeekdayEndHour, iconName: "moon.fill", tint: .teal)
+            HourWheelRow(title: "周末开始", subtitle: "周六、周日", hour: $entertainmentWeekendStartHour, iconName: "sun.max.fill", tint: .cyan)
+            HourWheelRow(title: "周末结束", subtitle: "到点自动锁定", hour: $entertainmentWeekendEndHour, iconName: "moon.fill", tint: .cyan)
 
             TimeWindowSummaryRow(
                 appName: "系统选择的娱乐 APP",
                 category: "由家长在系统选择器中指定",
-                weekdayWindow: "18:00-21:30",
-                weekendWindow: "08:00-22:00",
+                weekdayWindow: entertainmentWindowText(start: entertainmentWeekdayStartHour, end: entertainmentWeekdayEndHour),
+                weekendWindow: entertainmentWindowText(start: entertainmentWeekendStartHour, end: entertainmentWeekendEndHour),
                 limitText: "完成任务后解锁，到时自动锁定",
                 color: .teal
             )
@@ -2827,12 +3134,16 @@ struct ContentView: View {
 
             Stepper("启用任务数：\(enabledTaskCount) / \(maximumTaskCount)", value: $requiredLearningAppCount, in: 1...8, step: 1)
             TaskRuleEditor(taskLetter: "A", note: $mathNote, weekdays: $taskAWeekdays, minutes: $mathMinutes, rewardMinutes: $taskARewardMinutes, color: .blue) {
+                taskSelectedAppLabel(0)
+            } selectAppAction: {
                 #if canImport(FamilyControls)
                 isTaskAPickerPresented = true
                 #endif
             }
             if enabledTaskCount >= 2 {
                 TaskRuleEditor(taskLetter: "B", note: $englishNote, weekdays: $taskBWeekdays, minutes: $englishMinutes, rewardMinutes: $taskBRewardMinutes, color: .purple) {
+                    taskSelectedAppLabel(1)
+                } selectAppAction: {
                     #if canImport(FamilyControls)
                     isTaskBPickerPresented = true
                     #endif
@@ -2840,6 +3151,8 @@ struct ContentView: View {
             }
             if enabledTaskCount >= 3 {
                 TaskRuleEditor(taskLetter: "C", note: $readingNote, weekdays: $taskCWeekdays, minutes: $readingMinutes, rewardMinutes: $taskCRewardMinutes, color: .orange) {
+                    taskSelectedAppLabel(2)
+                } selectAppAction: {
                     #if canImport(FamilyControls)
                     isTaskCPickerPresented = true
                     #endif
@@ -2847,6 +3160,8 @@ struct ContentView: View {
             }
             if enabledTaskCount >= 4 {
                 TaskRuleEditor(taskLetter: "D", note: $taskDNote, weekdays: $taskDWeekdays, minutes: $taskDMinutes, rewardMinutes: $taskDRewardMinutes, color: .teal) {
+                    taskSelectedAppLabel(3)
+                } selectAppAction: {
                     #if canImport(FamilyControls)
                     isTaskDPickerPresented = true
                     #endif
@@ -2854,6 +3169,8 @@ struct ContentView: View {
             }
             if enabledTaskCount >= 5 {
                 TaskRuleEditor(taskLetter: "E", note: $taskENote, weekdays: $taskEWeekdays, minutes: $taskEMinutes, rewardMinutes: $taskERewardMinutes, color: .cyan) {
+                    taskSelectedAppLabel(4)
+                } selectAppAction: {
                     #if canImport(FamilyControls)
                     isTaskEPickerPresented = true
                     #endif
@@ -2861,6 +3178,8 @@ struct ContentView: View {
             }
             if enabledTaskCount >= 6 {
                 TaskRuleEditor(taskLetter: "F", note: $taskFNote, weekdays: $taskFWeekdays, minutes: $taskFMinutes, rewardMinutes: $taskFRewardMinutes, color: .indigo) {
+                    taskSelectedAppLabel(5)
+                } selectAppAction: {
                     #if canImport(FamilyControls)
                     isTaskFPickerPresented = true
                     #endif
@@ -2868,6 +3187,8 @@ struct ContentView: View {
             }
             if enabledTaskCount >= 7 {
                 TaskRuleEditor(taskLetter: "G", note: $taskGNote, weekdays: $taskGWeekdays, minutes: $taskGMinutes, rewardMinutes: $taskGRewardMinutes, color: .pink) {
+                    taskSelectedAppLabel(6)
+                } selectAppAction: {
                     #if canImport(FamilyControls)
                     isTaskGPickerPresented = true
                     #endif
@@ -2875,6 +3196,8 @@ struct ContentView: View {
             }
             if enabledTaskCount >= 8 {
                 TaskRuleEditor(taskLetter: "H", note: $taskHNote, weekdays: $taskHWeekdays, minutes: $taskHMinutes, rewardMinutes: $taskHRewardMinutes, color: .brown) {
+                    taskSelectedAppLabel(7)
+                } selectAppAction: {
                     #if canImport(FamilyControls)
                     isTaskHPickerPresented = true
                     #endif
@@ -2893,15 +3216,15 @@ struct ContentView: View {
                 Image(systemName: "gamecontroller.fill")
                     .foregroundStyle(.blue)
 
-                Text("奖励规则")
+                Text("每日可获得娱乐时间上限")
                     .font(.headline)
             }
 
-            Text("完成学习或运动任务后，奖励会进入娱乐时间余额。可设置每日可获得上限，防止过度刷任务。")
+            Text("完成学习或运动任务后会获得娱乐时间，但每天最多只能获得这么多分钟。单个任务奖励仍在每个任务下方设置。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            MinuteWheelRow(title: "每日最多可获得", subtitle: "防止为了攒时间而过度刷任务", minutes: $dailyEarnCapMinutes, range: 10...180, step: 5, iconName: "speedometer", tint: .orange)
+            MinuteWheelRow(title: "每日最多可获得", subtitle: "今天最多能赚多少娱乐时间", minutes: $dailyEarnCapMinutes, range: 10...180, step: 5, iconName: "speedometer", tint: .orange)
 
             Text(AppText.t("max_reward_line", maxGameTimeMinutes))
                 .font(.footnote)
@@ -3088,7 +3411,7 @@ struct ContentView: View {
     }
 
     private func applyScreenTimeLimit() {
-        let effectiveLimit = min(entertainmentBalanceMinutes, dailyUseCapMinutes)
+        let effectiveLimit = todayAvailableEntertainmentMinutes
         #if canImport(FamilyControls) && canImport(ManagedSettings)
         screenTimeManager.applyGameTimeLimit(minutes: effectiveLimit, selection: entertainmentActivitySelection)
         #else
@@ -3101,8 +3424,28 @@ struct ContentView: View {
             isParentUnlocked = true
             parentPINInput = ""
             parentPINError = ""
+            resetParentAutoLockTimer()
         } else {
             parentPINError = AppText.t("incorrect_pin")
+        }
+    }
+
+    private func lockParentArea() {
+        guard isParentUnlocked else { return }
+        isParentUnlocked = false
+        parentPINInput = ""
+        parentPINError = ""
+    }
+
+    private func resetParentAutoLockTimer() {
+        guard isParentUnlocked && selectedTab == 1 else { return }
+        parentLastActivityDate = Date()
+    }
+
+    private func autoLockParentAreaIfNeeded() {
+        guard isParentUnlocked && selectedTab == 1 else { return }
+        if Date().timeIntervalSince(parentLastActivityDate) >= parentAutoLockSeconds {
+            lockParentArea()
         }
     }
 
@@ -3114,6 +3457,17 @@ struct ContentView: View {
         newParentPIN = ""
     }
 
+    private func submitFeedback() {
+        let trimmedMessage = feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMessage.isEmpty else { return }
+
+        feedbackStatusMessage = feedbackScreenshotAttached ? "已收到反馈和截图，感谢。" : "已收到反馈，感谢。"
+        feedbackMessage = ""
+        feedbackContact = ""
+        feedbackScreenshotItem = nil
+        feedbackScreenshotAttached = false
+    }
+
     private func saveTodayRecord() {
         var records = decodeRecords()
         let todayRecord = DailyRecord(
@@ -3121,8 +3475,16 @@ struct ContentView: View {
             mathCompleted: mathCompleted,
             englishCompleted: englishCompleted,
             readingCompleted: readingCompleted,
-            completedCount: completedCount,
-            gameTimeMinutes: gameTimeMinutes
+            completedCount: completedTodayTaskCount,
+            gameTimeMinutes: gameTimeMinutes,
+            totalTaskCount: totalTodayTaskCount,
+            completionPercent: todayCompletionPercent,
+            scoreOneToFive: todayScoreOneToFive,
+            dailySummary: dailySummaryText,
+            weeklyCompletionPercent: weeklyCompletionPercent,
+            weeklyScoreOneToFive: weeklyScoreOneToFive,
+            weeklyComparePercent: weeklyComparePercent,
+            weeklySummary: weeklySummaryText
         )
 
         records.removeAll { $0.dateKey == todayKey }
