@@ -48,6 +48,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Do BetterDay needs read access to steps, exercise minutes, workouts, and active energy so parents and children can track movement goals and unlock earned entertainment time.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Do BetterDay requests Health access only to support movement goal tracking. The app does not write workout or health records without your permission.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
