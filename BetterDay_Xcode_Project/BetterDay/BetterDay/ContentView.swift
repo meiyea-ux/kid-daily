@@ -1508,22 +1508,31 @@ struct ContentView: View {
     }
 
     private var parentRuleActivityKey: String {
-        [
+        let textValues = [
             childName, mathNote, englishNote, readingNote, taskDNote, taskENote, taskFNote, taskGNote, taskHNote,
             taskAWeekdays, taskBWeekdays, taskCWeekdays, taskDWeekdays, taskEWeekdays, taskFWeekdays, taskGWeekdays, taskHWeekdays,
+            movementActivityType, movementExemptionReason, parentPIN
+        ]
+
+        let taskValues = [
             String(requiredLearningAppCount), String(mathMinutes), String(englishMinutes), String(readingMinutes),
             String(taskDMinutes), String(taskEMinutes), String(taskFMinutes), String(taskGMinutes), String(taskHMinutes),
             String(taskARewardMinutes), String(taskBRewardMinutes), String(taskCRewardMinutes), String(taskDRewardMinutes),
-            String(taskERewardMinutes), String(taskFRewardMinutes), String(taskGRewardMinutes), String(taskHRewardMinutes),
+            String(taskERewardMinutes), String(taskFRewardMinutes), String(taskGRewardMinutes), String(taskHRewardMinutes)
+        ]
+
+        let ruleValues = [
             String(movementStartHour), String(movementEndHour), String(movementTargetMinutes), String(movementRewardMinutes),
-            movementActivityType, String(entertainmentCarryoverMinutes), String(entertainmentBalanceCap),
+            String(entertainmentCarryoverMinutes), String(entertainmentBalanceCap),
             String(dailyEarnCapMinutes), String(allowEntertainmentCarryover),
             String(weekdayEntertainmentLimitMinutes), String(weekendEntertainmentLimitMinutes),
             String(weekdayVideoLimitMinutes), String(weekendVideoLimitMinutes), String(weekdayGameLimitMinutes),
             String(weekendGameCombinedLimitMinutes), String(entertainmentWeekdayStartHour), String(entertainmentWeekdayEndHour),
             String(entertainmentWeekendStartHour), String(entertainmentWeekendEndHour),
-            String(movementExemptionApproved), movementExemptionReason, parentPIN
-        ].joined(separator: "|")
+            String(movementExemptionApproved)
+        ]
+
+        return (textValues + taskValues + ruleValues).joined(separator: "|")
     }
 
     #if canImport(FamilyControls)
