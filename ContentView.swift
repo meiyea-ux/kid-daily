@@ -1129,12 +1129,12 @@ struct ScreenTimeSetupStep: View {
 
 struct TaskRuleEditor: View {
     let taskLetter: String
-    @Binding var appName: String
     @Binding var note: String
     @Binding var weekdays: String
     @Binding var minutes: Int
     @Binding var rewardMinutes: Int
     let color: Color
+    let selectAppAction: () -> Void
 
     private let weekdayItems: [(Int, String)] = [
         (2, "一"), (3, "二"), (4, "三"), (5, "四"), (6, "五"), (7, "六"), (1, "日")
@@ -1146,12 +1146,17 @@ struct TaskRuleEditor: View {
                 Image(systemName: "\(taskLetter.lowercased()).circle.fill")
                     .foregroundStyle(color)
 
-                Text("任务 \(taskLetter) · \(appName.isEmpty ? "应用 \(taskLetter)" : appName)")
+                Text("任务 \(taskLetter) · 系统选择的学习 APP")
                     .font(.headline)
             }
 
-            TextField("应用 \(taskLetter) 名称", text: $appName)
-                .textFieldStyle(.roundedBorder)
+            Button {
+                selectAppAction()
+            } label: {
+                Label("选择任务 \(taskLetter) 对应 APP", systemImage: "app.badge.checkmark")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
 
             TextField("任务 \(taskLetter) 学习说明", text: $note)
                 .textFieldStyle(.roundedBorder)
@@ -1226,14 +1231,6 @@ struct ContentView: View {
     @AppStorage("taskGRewardMinutes") private var taskGRewardMinutes = 10
     @AppStorage("taskHRewardMinutes") private var taskHRewardMinutes = 10
     @AppStorage("childName") private var childName = "孩子"
-    @AppStorage("taskAAppName") private var taskAAppName = "应用 A"
-    @AppStorage("taskBAppName") private var taskBAppName = "应用 B"
-    @AppStorage("taskCAppName") private var taskCAppName = "应用 C"
-    @AppStorage("taskDAppName") private var taskDAppName = "应用 D"
-    @AppStorage("taskEAppName") private var taskEAppName = "应用 E"
-    @AppStorage("taskFAppName") private var taskFAppName = "应用 F"
-    @AppStorage("taskGAppName") private var taskGAppName = "应用 G"
-    @AppStorage("taskHAppName") private var taskHAppName = "应用 H"
     @AppStorage("mathNote") private var mathNote = "练习数字和计算能力"
     @AppStorage("englishNote") private var englishNote = "使用英语学习应用完成练习"
     @AppStorage("readingNote") private var readingNote = "阅读一个故事或一本书"
@@ -1283,9 +1280,23 @@ struct ContentView: View {
     private let maximumTaskCount = 8
 
     #if canImport(FamilyControls)
-    @State private var learningActivitySelection = FamilyActivitySelection()
+    @State private var taskAActivitySelection = FamilyActivitySelection()
+    @State private var taskBActivitySelection = FamilyActivitySelection()
+    @State private var taskCActivitySelection = FamilyActivitySelection()
+    @State private var taskDActivitySelection = FamilyActivitySelection()
+    @State private var taskEActivitySelection = FamilyActivitySelection()
+    @State private var taskFActivitySelection = FamilyActivitySelection()
+    @State private var taskGActivitySelection = FamilyActivitySelection()
+    @State private var taskHActivitySelection = FamilyActivitySelection()
     @State private var entertainmentActivitySelection = FamilyActivitySelection()
-    @State private var isLearningPickerPresented = false
+    @State private var isTaskAPickerPresented = false
+    @State private var isTaskBPickerPresented = false
+    @State private var isTaskCPickerPresented = false
+    @State private var isTaskDPickerPresented = false
+    @State private var isTaskEPickerPresented = false
+    @State private var isTaskFPickerPresented = false
+    @State private var isTaskGPickerPresented = false
+    @State private var isTaskHPickerPresented = false
     @State private var isEntertainmentPickerPresented = false
     #endif
 
@@ -1514,7 +1525,14 @@ struct ContentView: View {
         .onChange(of: taskHCompleted) { _ in updateTodayProgress() }
         .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
         #if canImport(FamilyControls)
-        .familyActivityPicker(isPresented: $isLearningPickerPresented, selection: $learningActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskAPickerPresented, selection: $taskAActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskBPickerPresented, selection: $taskBActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskCPickerPresented, selection: $taskCActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskDPickerPresented, selection: $taskDActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskEPickerPresented, selection: $taskEActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskFPickerPresented, selection: $taskFActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskGPickerPresented, selection: $taskGActivitySelection)
+        .familyActivityPicker(isPresented: $isTaskHPickerPresented, selection: $taskHActivitySelection)
         .familyActivityPicker(isPresented: $isEntertainmentPickerPresented, selection: $entertainmentActivitySelection)
         #endif
     }
@@ -1590,13 +1608,9 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
 
             #if canImport(FamilyControls)
-            Button {
-                isLearningPickerPresented = true
-            } label: {
-                Label(AppText.t("choose_learning_apps"), systemImage: "book.closed.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
+            Label("学习 APP 请在规则设定里按任务 A-H 分别选择", systemImage: "book.closed.fill")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
 
             Button {
                 isEntertainmentPickerPresented = true
@@ -2189,7 +2203,7 @@ struct ContentView: View {
 
             if taskIsScheduledToday(0) {
                 LearningTaskRow(
-                    title: "任务 A · \(taskAAppName)",
+                    title: "任务 A · 系统选择的学习 APP",
                     minutes: mathMinutes,
                     note: mathNote,
                     rewardMinutes: taskARewardMinutes,
@@ -2201,7 +2215,7 @@ struct ContentView: View {
 
             if enabledTaskCount >= 2 && taskIsScheduledToday(1) {
                 LearningTaskRow(
-                    title: "任务 B · \(taskBAppName)",
+                    title: "任务 B · 系统选择的学习 APP",
                     minutes: englishMinutes,
                     note: englishNote,
                     rewardMinutes: taskBRewardMinutes,
@@ -2213,7 +2227,7 @@ struct ContentView: View {
 
             if enabledTaskCount >= 3 && taskIsScheduledToday(2) {
                 LearningTaskRow(
-                    title: "任务 C · \(taskCAppName)",
+                    title: "任务 C · 系统选择的学习 APP",
                     minutes: readingMinutes,
                     note: readingNote,
                     rewardMinutes: taskCRewardMinutes,
@@ -2225,7 +2239,7 @@ struct ContentView: View {
 
             if enabledTaskCount >= 4 && taskIsScheduledToday(3) {
                 LearningTaskRow(
-                    title: "任务 D · \(taskDAppName)",
+                    title: "任务 D · 系统选择的学习 APP",
                     minutes: taskDMinutes,
                     note: taskDNote,
                     rewardMinutes: taskDRewardMinutes,
@@ -2237,7 +2251,7 @@ struct ContentView: View {
 
             if enabledTaskCount >= 5 && taskIsScheduledToday(4) {
                 LearningTaskRow(
-                    title: "任务 E · \(taskEAppName)",
+                    title: "任务 E · 系统选择的学习 APP",
                     minutes: taskEMinutes,
                     note: taskENote,
                     rewardMinutes: taskERewardMinutes,
@@ -2249,7 +2263,7 @@ struct ContentView: View {
 
             if enabledTaskCount >= 6 && taskIsScheduledToday(5) {
                 LearningTaskRow(
-                    title: "任务 F · \(taskFAppName)",
+                    title: "任务 F · 系统选择的学习 APP",
                     minutes: taskFMinutes,
                     note: taskFNote,
                     rewardMinutes: taskFRewardMinutes,
@@ -2261,7 +2275,7 @@ struct ContentView: View {
 
             if enabledTaskCount >= 7 && taskIsScheduledToday(6) {
                 LearningTaskRow(
-                    title: "任务 G · \(taskGAppName)",
+                    title: "任务 G · 系统选择的学习 APP",
                     minutes: taskGMinutes,
                     note: taskGNote,
                     rewardMinutes: taskGRewardMinutes,
@@ -2273,7 +2287,7 @@ struct ContentView: View {
 
             if enabledTaskCount >= 8 && taskIsScheduledToday(7) {
                 LearningTaskRow(
-                    title: "任务 H · \(taskHAppName)",
+                    title: "任务 H · 系统选择的学习 APP",
                     minutes: taskHMinutes,
                     note: taskHNote,
                     rewardMinutes: taskHRewardMinutes,
@@ -2667,6 +2681,20 @@ struct ContentView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
+            #if canImport(FamilyControls)
+            Button {
+                isEntertainmentPickerPresented = true
+            } label: {
+                Label("选择娱乐 APP", systemImage: "gamecontroller.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            #else
+            Text(AppText.t("picker_unavailable"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            #endif
+
             Toggle("允许未用完时间累积", isOn: $allowEntertainmentCarryover)
             MinuteWheelRow(title: "当前结余", subtitle: "模拟余额，后续接入真实使用扣减", minutes: $entertainmentCarryoverMinutes, range: 0...300, step: 5, iconName: "tray.full.fill", tint: .blue)
             MinuteWheelRow(title: "总余额上限", subtitle: "避免无限攒时间", minutes: $entertainmentBalanceCap, range: 30...600, step: 10, iconName: "lock.fill", tint: .purple)
@@ -2741,8 +2769,8 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
 
             TimeWindowSummaryRow(
-                appName: "喜马拉雅儿童",
-                category: "音频故事类",
+                appName: "系统选择的娱乐 APP",
+                category: "由家长在系统选择器中指定",
                 weekdayWindow: "18:00-21:30",
                 weekendWindow: "08:00-22:00",
                 limitText: "完成任务后解锁，到时自动锁定",
@@ -2798,27 +2826,59 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
 
             Stepper("启用任务数：\(enabledTaskCount) / \(maximumTaskCount)", value: $requiredLearningAppCount, in: 1...8, step: 1)
-            TaskRuleEditor(taskLetter: "A", appName: $taskAAppName, note: $mathNote, weekdays: $taskAWeekdays, minutes: $mathMinutes, rewardMinutes: $taskARewardMinutes, color: .blue)
+            TaskRuleEditor(taskLetter: "A", note: $mathNote, weekdays: $taskAWeekdays, minutes: $mathMinutes, rewardMinutes: $taskARewardMinutes, color: .blue) {
+                #if canImport(FamilyControls)
+                isTaskAPickerPresented = true
+                #endif
+            }
             if enabledTaskCount >= 2 {
-                TaskRuleEditor(taskLetter: "B", appName: $taskBAppName, note: $englishNote, weekdays: $taskBWeekdays, minutes: $englishMinutes, rewardMinutes: $taskBRewardMinutes, color: .purple)
+                TaskRuleEditor(taskLetter: "B", note: $englishNote, weekdays: $taskBWeekdays, minutes: $englishMinutes, rewardMinutes: $taskBRewardMinutes, color: .purple) {
+                    #if canImport(FamilyControls)
+                    isTaskBPickerPresented = true
+                    #endif
+                }
             }
             if enabledTaskCount >= 3 {
-                TaskRuleEditor(taskLetter: "C", appName: $taskCAppName, note: $readingNote, weekdays: $taskCWeekdays, minutes: $readingMinutes, rewardMinutes: $taskCRewardMinutes, color: .orange)
+                TaskRuleEditor(taskLetter: "C", note: $readingNote, weekdays: $taskCWeekdays, minutes: $readingMinutes, rewardMinutes: $taskCRewardMinutes, color: .orange) {
+                    #if canImport(FamilyControls)
+                    isTaskCPickerPresented = true
+                    #endif
+                }
             }
             if enabledTaskCount >= 4 {
-                TaskRuleEditor(taskLetter: "D", appName: $taskDAppName, note: $taskDNote, weekdays: $taskDWeekdays, minutes: $taskDMinutes, rewardMinutes: $taskDRewardMinutes, color: .teal)
+                TaskRuleEditor(taskLetter: "D", note: $taskDNote, weekdays: $taskDWeekdays, minutes: $taskDMinutes, rewardMinutes: $taskDRewardMinutes, color: .teal) {
+                    #if canImport(FamilyControls)
+                    isTaskDPickerPresented = true
+                    #endif
+                }
             }
             if enabledTaskCount >= 5 {
-                TaskRuleEditor(taskLetter: "E", appName: $taskEAppName, note: $taskENote, weekdays: $taskEWeekdays, minutes: $taskEMinutes, rewardMinutes: $taskERewardMinutes, color: .cyan)
+                TaskRuleEditor(taskLetter: "E", note: $taskENote, weekdays: $taskEWeekdays, minutes: $taskEMinutes, rewardMinutes: $taskERewardMinutes, color: .cyan) {
+                    #if canImport(FamilyControls)
+                    isTaskEPickerPresented = true
+                    #endif
+                }
             }
             if enabledTaskCount >= 6 {
-                TaskRuleEditor(taskLetter: "F", appName: $taskFAppName, note: $taskFNote, weekdays: $taskFWeekdays, minutes: $taskFMinutes, rewardMinutes: $taskFRewardMinutes, color: .indigo)
+                TaskRuleEditor(taskLetter: "F", note: $taskFNote, weekdays: $taskFWeekdays, minutes: $taskFMinutes, rewardMinutes: $taskFRewardMinutes, color: .indigo) {
+                    #if canImport(FamilyControls)
+                    isTaskFPickerPresented = true
+                    #endif
+                }
             }
             if enabledTaskCount >= 7 {
-                TaskRuleEditor(taskLetter: "G", appName: $taskGAppName, note: $taskGNote, weekdays: $taskGWeekdays, minutes: $taskGMinutes, rewardMinutes: $taskGRewardMinutes, color: .pink)
+                TaskRuleEditor(taskLetter: "G", note: $taskGNote, weekdays: $taskGWeekdays, minutes: $taskGMinutes, rewardMinutes: $taskGRewardMinutes, color: .pink) {
+                    #if canImport(FamilyControls)
+                    isTaskGPickerPresented = true
+                    #endif
+                }
             }
             if enabledTaskCount >= 8 {
-                TaskRuleEditor(taskLetter: "H", appName: $taskHAppName, note: $taskHNote, weekdays: $taskHWeekdays, minutes: $taskHMinutes, rewardMinutes: $taskHRewardMinutes, color: .brown)
+                TaskRuleEditor(taskLetter: "H", note: $taskHNote, weekdays: $taskHWeekdays, minutes: $taskHMinutes, rewardMinutes: $taskHRewardMinutes, color: .brown) {
+                    #if canImport(FamilyControls)
+                    isTaskHPickerPresented = true
+                    #endif
+                }
             }
         }
         .padding()
