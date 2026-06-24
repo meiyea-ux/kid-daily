@@ -24,13 +24,13 @@ enum AppText {
     }
 
     static func currentLanguageKey() -> String {
-        let preferred = Locale.preferredLanguages.first?.lowercased() ?? "en"
+        let preferred = Locale.preferredLanguages.first?.lowercased() ?? "zh-hans"
         if preferred.hasPrefix("zh-hans") || preferred.hasPrefix("zh-cn") || preferred.hasPrefix("zh-sg") { return "zh-Hans" }
         if preferred.hasPrefix("zh-hant") || preferred.hasPrefix("zh-tw") || preferred.hasPrefix("zh-hk") || preferred.hasPrefix("zh-mo") { return "zh-Hant" }
         if preferred.hasPrefix("ja") { return "ja" }
         if preferred.hasPrefix("ko") { return "ko" }
         if preferred.hasPrefix("es") { return "es" }
-        return "en"
+        return "zh-Hans"
     }
 
     private static let english: [String: String] = [
@@ -194,7 +194,27 @@ enum AppText {
             "health_data_sync": "健康数据同步", "request_health_permission": "请求健康权限", "sync_health_data": "同步健康数据", "syncing": "同步中...",
             "parent_area_locked": "家长区已锁定", "parent_pin_prompt": "输入家长 PIN 查看记录和设置。", "parent_pin": "家长 PIN", "unlock_parent_area": "解锁家长区",
             "movement_window": "运动时段", "movement_window_desc": "设置每日活动时段和运动奖励。", "reward_rule": "奖励规则", "learning_app_goals": "学习应用目标",
-            "child_profile": "孩子资料", "child_name": "孩子姓名", "parent_notes": "家长备注", "incorrect_pin": "PIN 不正确，请重试。"
+            "child_profile": "孩子资料", "child_name": "孩子姓名", "parent_notes": "家长备注", "incorrect_pin": "PIN 不正确，请重试。",
+            "app_name": "BetterDay", "nav_records": "每日记录", "parent_subtitle": "设置学习应用目标、奖励分钟数、娱乐锁定和运动时段。",
+            "screen_time_api": "屏幕使用时间 API", "authorization": "授权：%@", "current_earned_limit": "当前已获得上限：%d 分钟",
+            "request_screen_time_permission": "请求屏幕使用时间权限", "select_apps_categories": "选择应用和类别", "apply_earned_limit": "应用已获得上限", "clear_screen_time_restrictions": "清除屏幕使用限制",
+            "setup_screen_time": "设置屏幕使用时间", "setup_screen_time_subtitle": "Apple 屏幕使用时间集成准备清单。", "request_permission": "请求权限", "request_permission_desc": "在这台 iPhone 上请求屏幕使用时间权限。",
+            "select_apps": "选择应用", "select_apps_desc": "选择由 BetterDay 管理的游戏或应用。", "apply_limit": "应用限制", "apply_limit_desc": "用已获得娱乐时间应用每日屏幕使用限制。", "monitor_usage": "监测使用",
+            "monitor_usage_desc": "读取活动报告并更新家长控制台。", "continuous_learning": "连续学习", "day_streak": "%d 天连续", "game_time_unlocked": "娱乐已解锁：%d 分钟", "game_time_locked": "娱乐时间待解锁",
+            "min_earned": "分钟已获得", "completed_count": "已完成：%d / %d", "progress_rule": "每完成一个学习应用目标，可获得 %d 分钟娱乐时间。", "date": "日期", "completed": "已完成",
+            "record_detail": "记录详情", "done": "完成", "not_done": "未完成", "parent_pin_desc": "修改用于打开家长页的 PIN。", "history": "历史", "no_records": "还没有每日记录。",
+            "no_records_desc": "完成或重置今天的任务后会生成记录。", "reset_today": "重置今天", "summary": "汇总", "tasks": "任务", "steps": "步数", "today": "今天",
+            "exercise": "运动", "min_today": "今日分钟", "active_energy": "活动能量", "latest_workout": "最近运动", "health_sync_desc": "读取今天的步数、Apple 运动分钟、活动能量和最近运动。Apple Watch 运动同步到 iPhone 健康 App 后会显示在这里。",
+            "current_streak": "当前连续", "last_7_days": "最近 7 天", "perfect_days": "完美天数", "movement_results": "运动结果", "movement_today": "今天：%d 步，%d 分钟运动，%d 千卡。",
+            "latest_workout_line": "最近运动：%@，%d 分钟。", "refresh_movement_data": "刷新运动数据", "web_parent_sync": "家长网页同步", "web_parent_sync_desc": "输入家长网页控制台生成的配对码。今天的学习和娱乐时间会上传，方便远程查看。",
+            "pairing_code": "配对码", "sync_remote_settings": "同步远程设置", "uploading": "上传中...", "upload_today_record": "上传今日记录", "auth_failed": "授权失败：%@", "opening_picker": "正在打开应用和类别选择器...",
+            "picker_unavailable": "当前构建不可用 FamilyActivityPicker。", "status_not_requested": "尚未请求屏幕使用时间权限。", "status_denied": "屏幕使用时间权限已被拒绝。", "status_approved": "屏幕使用时间权限已通过。",
+            "status_unknown": "未知的屏幕使用时间授权状态。", "requesting_screen_time": "正在请求屏幕使用时间权限...", "approve_before_limit": "应用限制前，请先批准屏幕使用时间权限。", "select_before_limit": "应用屏幕使用限制前，请先选择应用或类别。",
+            "limit_applied": "已对所选应用应用屏幕使用限制。已获得上限：%d 分钟。", "limit_zero": "还没有获得娱乐时间。所选应用和类别已被限制。", "restrictions_cleared": "屏幕使用限制已清除。", "unavailable_build": "当前构建不可用 FamilyControls。",
+            "entertainment_unlocked_status": "娱乐应用已按 %d 分钟奖励时间解锁。", "entertainment_locked_status": "娱乐应用会保持锁定，直到学习或运动目标完成。", "child_profile_desc": "设置今日页面显示的孩子姓名。",
+            "learning_app_goals_desc": "调整每个每日学习应用的预期使用时长。", "required_study_apps": "必需学习应用：%d", "math_app_minutes": "数学应用：%d 分钟", "english_app_minutes": "英语应用：%d 分钟", "reading_app_minutes": "阅读应用：%d 分钟",
+            "reward_rule_desc": "设置每完成一个学习应用可获得多少娱乐时间。", "max_reward_line": "完成所有学习目标后，运动奖励前最多可解锁 %d 分钟。", "reward_per_app": "奖励：每完成一个学习应用 %d 分钟",
+            "start_hour": "开始：%d:00", "end_hour": "结束：%d:00", "goal_minutes": "目标：%d 分钟", "reward_minutes": "奖励：%d 分钟", "activity": "活动", "workout": "运动", "exercise_minutes": "运动分钟", "parent_notes_desc": "下一步构建：添加 DeviceActivityMonitor 扩展，让学习应用分钟数自动读取，而不是手动勾选。", "new_parent_pin": "新的 4 位 PIN", "save_new_pin": "保存新 PIN"
         ],
         "zh-Hant": [
             "tab_today": "今日", "tab_apps": "應用", "tab_move": "運動", "tab_records": "記錄", "tab_parent": "家長",
