@@ -1131,6 +1131,10 @@ struct ContentView: View {
     @AppStorage("englishCompleted") private var englishCompleted = false
     @AppStorage("readingCompleted") private var readingCompleted = false
     @AppStorage("taskDCompleted") private var taskDCompleted = false
+    @AppStorage("taskECompleted") private var taskECompleted = false
+    @AppStorage("taskFCompleted") private var taskFCompleted = false
+    @AppStorage("taskGCompleted") private var taskGCompleted = false
+    @AppStorage("taskHCompleted") private var taskHCompleted = false
     @AppStorage("lastSavedDateKey") private var lastSavedDateKey = ""
     @AppStorage("dailyRecordsData") private var dailyRecordsData = ""
     @AppStorage("parentPIN") private var parentPIN = "1234"
@@ -1138,12 +1142,20 @@ struct ContentView: View {
     @AppStorage("englishMinutes") private var englishMinutes = 20
     @AppStorage("readingMinutes") private var readingMinutes = 15
     @AppStorage("taskDMinutes") private var taskDMinutes = 20
+    @AppStorage("taskEMinutes") private var taskEMinutes = 20
+    @AppStorage("taskFMinutes") private var taskFMinutes = 20
+    @AppStorage("taskGMinutes") private var taskGMinutes = 20
+    @AppStorage("taskHMinutes") private var taskHMinutes = 20
     @AppStorage("gameMinutesPerTask") private var gameMinutesPerTask = 10
     @AppStorage("childName") private var childName = "孩子"
     @AppStorage("mathNote") private var mathNote = "练习数字和计算能力"
     @AppStorage("englishNote") private var englishNote = "使用英语学习应用完成练习"
     @AppStorage("readingNote") private var readingNote = "阅读一个故事或一本书"
     @AppStorage("taskDNote") private var taskDNote = "使用应用 D 完成家长设定任务"
+    @AppStorage("taskENote") private var taskENote = "使用应用 E 完成家长设定任务"
+    @AppStorage("taskFNote") private var taskFNote = "使用应用 F 完成家长设定任务"
+    @AppStorage("taskGNote") private var taskGNote = "使用应用 G 完成家长设定任务"
+    @AppStorage("taskHNote") private var taskHNote = "使用应用 H 完成家长设定任务"
     @AppStorage("webPairingCode") private var webPairingCode = ""
     @AppStorage("requiredLearningAppCount") private var requiredLearningAppCount = 2
     @AppStorage("movementStartHour") private var movementStartHour = 17
@@ -1174,7 +1186,7 @@ struct ContentView: View {
     @State private var parentPINError = ""
     @State private var selectedTab = 0
 
-    private let maximumTaskCount = 4
+    private let maximumTaskCount = 8
 
     #if canImport(FamilyControls)
     @State private var learningActivitySelection = FamilyActivitySelection()
@@ -1184,7 +1196,16 @@ struct ContentView: View {
     #endif
 
     private var completedCount: Int {
-        Array([mathCompleted, englishCompleted, readingCompleted, taskDCompleted].prefix(enabledTaskCount)).filter { $0 }.count
+        Array([
+            mathCompleted,
+            englishCompleted,
+            readingCompleted,
+            taskDCompleted,
+            taskECompleted,
+            taskFCompleted,
+            taskGCompleted,
+            taskHCompleted
+        ].prefix(enabledTaskCount)).filter { $0 }.count
     }
 
     private var enabledTaskCount: Int {
@@ -1331,6 +1352,10 @@ struct ContentView: View {
         .onChange(of: englishCompleted) { _ in updateTodayProgress() }
         .onChange(of: readingCompleted) { _ in updateTodayProgress() }
         .onChange(of: taskDCompleted) { _ in updateTodayProgress() }
+        .onChange(of: taskECompleted) { _ in updateTodayProgress() }
+        .onChange(of: taskFCompleted) { _ in updateTodayProgress() }
+        .onChange(of: taskGCompleted) { _ in updateTodayProgress() }
+        .onChange(of: taskHCompleted) { _ in updateTodayProgress() }
         .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
         #if canImport(FamilyControls)
         .familyActivityPicker(isPresented: $isLearningPickerPresented, selection: $learningActivitySelection)
@@ -2037,6 +2062,50 @@ struct ContentView: View {
                     isCompleted: $taskDCompleted
                 )
             }
+
+            if enabledTaskCount >= 5 {
+                LearningTaskRow(
+                    title: "任务 E · 应用 E",
+                    minutes: taskEMinutes,
+                    note: taskENote,
+                    rewardMinutes: gameMinutesPerTask,
+                    color: .cyan,
+                    isCompleted: $taskECompleted
+                )
+            }
+
+            if enabledTaskCount >= 6 {
+                LearningTaskRow(
+                    title: "任务 F · 应用 F",
+                    minutes: taskFMinutes,
+                    note: taskFNote,
+                    rewardMinutes: gameMinutesPerTask,
+                    color: .indigo,
+                    isCompleted: $taskFCompleted
+                )
+            }
+
+            if enabledTaskCount >= 7 {
+                LearningTaskRow(
+                    title: "任务 G · 应用 G",
+                    minutes: taskGMinutes,
+                    note: taskGNote,
+                    rewardMinutes: gameMinutesPerTask,
+                    color: .pink,
+                    isCompleted: $taskGCompleted
+                )
+            }
+
+            if enabledTaskCount >= 8 {
+                LearningTaskRow(
+                    title: "任务 H · 应用 H",
+                    minutes: taskHMinutes,
+                    note: taskHNote,
+                    rewardMinutes: gameMinutesPerTask,
+                    color: .brown,
+                    isCompleted: $taskHCompleted
+                )
+            }
         }
     }
 
@@ -2552,11 +2621,15 @@ struct ContentView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Stepper("启用任务数：\(enabledTaskCount) / \(maximumTaskCount)", value: $requiredLearningAppCount, in: 1...4, step: 1)
+            Stepper("启用任务数：\(enabledTaskCount) / \(maximumTaskCount)", value: $requiredLearningAppCount, in: 1...8, step: 1)
             MinuteWheelRow(title: "任务 A · 应用 A", subtitle: "家长设定应用 A 的使用目标", minutes: $mathMinutes, range: 5...180, step: 5, iconName: "a.circle.fill", tint: .blue)
             MinuteWheelRow(title: "任务 B · 应用 B", subtitle: "家长设定应用 B 的使用目标", minutes: $englishMinutes, range: 5...180, step: 5, iconName: "b.circle.fill", tint: .purple)
             MinuteWheelRow(title: "任务 C · 应用 C", subtitle: "家长设定应用 C 的使用目标", minutes: $readingMinutes, range: 5...180, step: 5, iconName: "c.circle.fill", tint: .orange)
             MinuteWheelRow(title: "任务 D · 应用 D", subtitle: "启用 4 个任务时，今日页会同步显示", minutes: $taskDMinutes, range: 5...180, step: 5, iconName: "d.circle.fill", tint: .teal)
+            MinuteWheelRow(title: "任务 E · 应用 E", subtitle: "启用 5 个任务时，今日页会同步显示", minutes: $taskEMinutes, range: 5...180, step: 5, iconName: "e.circle.fill", tint: .cyan)
+            MinuteWheelRow(title: "任务 F · 应用 F", subtitle: "启用 6 个任务时，今日页会同步显示", minutes: $taskFMinutes, range: 5...180, step: 5, iconName: "f.circle.fill", tint: .indigo)
+            MinuteWheelRow(title: "任务 G · 应用 G", subtitle: "启用 7 个任务时，今日页会同步显示", minutes: $taskGMinutes, range: 5...180, step: 5, iconName: "g.circle.fill", tint: .pink)
+            MinuteWheelRow(title: "任务 H · 应用 H", subtitle: "启用 8 个任务时，今日页会同步显示", minutes: $taskHMinutes, range: 5...180, step: 5, iconName: "h.circle.fill", tint: .brown)
 
             TextField("任务 A 说明", text: $mathNote)
                 .textFieldStyle(.roundedBorder)
@@ -2568,6 +2641,18 @@ struct ContentView: View {
                 .textFieldStyle(.roundedBorder)
 
             TextField("任务 D 说明", text: $taskDNote)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("任务 E 说明", text: $taskENote)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("任务 F 说明", text: $taskFNote)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("任务 G 说明", text: $taskGNote)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("任务 H 说明", text: $taskHNote)
                 .textFieldStyle(.roundedBorder)
         }
         .padding()
@@ -2703,6 +2788,10 @@ struct ContentView: View {
             englishCompleted = false
             readingCompleted = false
             taskDCompleted = false
+            taskECompleted = false
+            taskFCompleted = false
+            taskGCompleted = false
+            taskHCompleted = false
             updateTodayProgress()
         } label: {
             Label(AppText.t("reset_today"), systemImage: "arrow.counterclockwise")
@@ -2739,6 +2828,10 @@ struct ContentView: View {
         englishCompleted = false
         readingCompleted = false
         taskDCompleted = false
+        taskECompleted = false
+        taskFCompleted = false
+        taskGCompleted = false
+        taskHCompleted = false
         lastSavedDateKey = todayKey
     }
 
