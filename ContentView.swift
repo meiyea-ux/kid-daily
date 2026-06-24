@@ -1508,31 +1508,67 @@ struct ContentView: View {
     }
 
     private var parentRuleActivityKey: String {
-        let textValues = [
-            childName, mathNote, englishNote, readingNote, taskDNote, taskENote, taskFNote, taskGNote, taskHNote,
-            taskAWeekdays, taskBWeekdays, taskCWeekdays, taskDWeekdays, taskEWeekdays, taskFWeekdays, taskGWeekdays, taskHWeekdays,
-            movementActivityType, movementExemptionReason, parentPIN
-        ]
+        var values: [String] = []
 
-        let taskValues = [
-            String(requiredLearningAppCount), String(mathMinutes), String(englishMinutes), String(readingMinutes),
-            String(taskDMinutes), String(taskEMinutes), String(taskFMinutes), String(taskGMinutes), String(taskHMinutes),
-            String(taskARewardMinutes), String(taskBRewardMinutes), String(taskCRewardMinutes), String(taskDRewardMinutes),
-            String(taskERewardMinutes), String(taskFRewardMinutes), String(taskGRewardMinutes), String(taskHRewardMinutes)
-        ]
+        values.append(childName)
+        values.append(mathNote)
+        values.append(englishNote)
+        values.append(readingNote)
+        values.append(taskDNote)
+        values.append(taskENote)
+        values.append(taskFNote)
+        values.append(taskGNote)
+        values.append(taskHNote)
+        values.append(taskAWeekdays)
+        values.append(taskBWeekdays)
+        values.append(taskCWeekdays)
+        values.append(taskDWeekdays)
+        values.append(taskEWeekdays)
+        values.append(taskFWeekdays)
+        values.append(taskGWeekdays)
+        values.append(taskHWeekdays)
+        values.append(movementActivityType)
+        values.append(movementExemptionReason)
+        values.append(parentPIN)
 
-        let ruleValues = [
-            String(movementStartHour), String(movementEndHour), String(movementTargetMinutes), String(movementRewardMinutes),
-            String(entertainmentCarryoverMinutes), String(entertainmentBalanceCap),
-            String(dailyEarnCapMinutes), String(allowEntertainmentCarryover),
-            String(weekdayEntertainmentLimitMinutes), String(weekendEntertainmentLimitMinutes),
-            String(weekdayVideoLimitMinutes), String(weekendVideoLimitMinutes), String(weekdayGameLimitMinutes),
-            String(weekendGameCombinedLimitMinutes), String(entertainmentWeekdayStartHour), String(entertainmentWeekdayEndHour),
-            String(entertainmentWeekendStartHour), String(entertainmentWeekendEndHour),
-            String(movementExemptionApproved)
-        ]
+        values.append(String(requiredLearningAppCount))
+        values.append(String(mathMinutes))
+        values.append(String(englishMinutes))
+        values.append(String(readingMinutes))
+        values.append(String(taskDMinutes))
+        values.append(String(taskEMinutes))
+        values.append(String(taskFMinutes))
+        values.append(String(taskGMinutes))
+        values.append(String(taskHMinutes))
+        values.append(String(taskARewardMinutes))
+        values.append(String(taskBRewardMinutes))
+        values.append(String(taskCRewardMinutes))
+        values.append(String(taskDRewardMinutes))
+        values.append(String(taskERewardMinutes))
+        values.append(String(taskFRewardMinutes))
+        values.append(String(taskGRewardMinutes))
+        values.append(String(taskHRewardMinutes))
+        values.append(String(movementStartHour))
+        values.append(String(movementEndHour))
+        values.append(String(movementTargetMinutes))
+        values.append(String(movementRewardMinutes))
+        values.append(String(entertainmentCarryoverMinutes))
+        values.append(String(entertainmentBalanceCap))
+        values.append(String(dailyEarnCapMinutes))
+        values.append(String(allowEntertainmentCarryover))
+        values.append(String(weekdayEntertainmentLimitMinutes))
+        values.append(String(weekendEntertainmentLimitMinutes))
+        values.append(String(weekdayVideoLimitMinutes))
+        values.append(String(weekendVideoLimitMinutes))
+        values.append(String(weekdayGameLimitMinutes))
+        values.append(String(weekendGameCombinedLimitMinutes))
+        values.append(String(entertainmentWeekdayStartHour))
+        values.append(String(entertainmentWeekdayEndHour))
+        values.append(String(entertainmentWeekendStartHour))
+        values.append(String(entertainmentWeekendEndHour))
+        values.append(String(movementExemptionApproved))
 
-        return (textValues + taskValues + ruleValues).joined(separator: "|")
+        return values.joined(separator: "|")
     }
 
     #if canImport(FamilyControls)
