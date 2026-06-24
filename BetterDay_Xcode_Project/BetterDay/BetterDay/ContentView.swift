@@ -288,7 +288,7 @@ final class ScreenTimeManager: ObservableObject {
         case .denied:
             authorizationState = .denied
             statusMessage = AppText.t("status_denied")
-        case .approved:
+        case .approved, .approvedWithDataAccess:
             authorizationState = .approved
             statusMessage = AppText.t("status_approved")
         @unknown default:
@@ -362,12 +362,12 @@ final class ScreenTimeManager: ObservableObject {
 
 @MainActor
 final class HealthSyncManager: ObservableObject {
-    @Published var statusMessage = "Health sync is ready for iPhone and Apple Watch data."
+    @Published var statusMessage = "健康同步已就绪，可读取 iPhone 和 Apple Watch 数据。"
     @Published var isSyncing = false
     @Published var steps = 0
     @Published var exerciseMinutes = 0
     @Published var activeEnergyKcal = 0
-    @Published var latestWorkoutName = "No workout yet"
+    @Published var latestWorkoutName = "暂无运动记录"
     @Published var latestWorkoutMinutes = 0
 
     #if canImport(HealthKit)
@@ -385,14 +385,14 @@ final class HealthSyncManager: ObservableObject {
     func requestAuthorizationAndSync() async {
         #if canImport(HealthKit)
         guard isHealthDataAvailable else {
-            statusMessage = "Health data is not available on this device. Test on a real iPhone."
+            statusMessage = "这台设备无法读取健康数据，请在真实 iPhone 上测试。"
             return
         }
 
         guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount),
               let exerciseType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime),
               let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
-            statusMessage = "HealthKit quantity types are unavailable."
+            statusMessage = "当前系统无法读取 HealthKit 运动数据类型。"
             return
         }
 
@@ -404,33 +404,33 @@ final class HealthSyncManager: ObservableObject {
         ]
 
         do {
-            statusMessage = "Requesting Health permission..."
+            statusMessage = "正在请求健康数据权限..."
             try await requestHealthAuthorization(readTypes: readTypes)
             await syncTodayHealthData()
         } catch {
-            statusMessage = "Health permission failed: \(error.localizedDescription)"
+            statusMessage = "健康权限请求失败：\(error.localizedDescription)"
         }
         #else
-        statusMessage = "HealthKit is unavailable in this build."
+        statusMessage = "当前构建不可用 HealthKit。"
         #endif
     }
 
     func syncTodayHealthData() async {
         #if canImport(HealthKit)
         guard isHealthDataAvailable else {
-            statusMessage = "Health data is not available on this device. Test on a real iPhone."
+            statusMessage = "这台设备无法读取健康数据，请在真实 iPhone 上测试。"
             return
         }
 
         guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount),
               let exerciseType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime),
               let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
-            statusMessage = "HealthKit quantity types are unavailable."
+            statusMessage = "当前系统无法读取 HealthKit 运动数据类型。"
             return
         }
 
         isSyncing = true
-        statusMessage = "Syncing today's Health data..."
+        statusMessage = "正在同步今天的健康数据..."
 
         async let todaySteps = sumQuantity(stepType, unit: HKUnit.count())
         async let todayExercise = sumQuantity(exerciseType, unit: HKUnit.minute())
@@ -448,9 +448,9 @@ final class HealthSyncManager: ObservableObject {
         latestWorkoutName = syncedWorkout.name
         latestWorkoutMinutes = syncedWorkout.minutes
         isSyncing = false
-        statusMessage = "Health data synced from iPhone / Apple Watch."
+        statusMessage = "已同步 iPhone / Apple Watch 健康数据。"
         #else
-        statusMessage = "HealthKit is unavailable in this build."
+        statusMessage = "当前构建不可用 HealthKit。"
         #endif
     }
 
@@ -468,7 +468,7 @@ final class HealthSyncManager: ObservableObject {
                 } else if success {
                     continuation.resume()
                 } else {
-                    continuation.resume(throwing: NSError(domain: "KidDailyHealth", code: 1, userInfo: [NSLocalizedDescriptionKey: "Health permission was not granted."]))
+                    continuation.resume(throwing: NSError(domain: "KidDailyHealth", code: 1, userInfo: [NSLocalizedDescriptionKey: "未获得健康数据权限。"]))
                 }
             }
         }
@@ -499,7 +499,7 @@ final class HealthSyncManager: ObservableObject {
                 sortDescriptors: [sort]
             ) { _, samples, _ in
                 guard let workout = samples?.first as? HKWorkout else {
-                    continuation.resume(returning: ("No workout yet", 0))
+                    continuation.resume(returning: ("暂无运动记录", 0))
                     return
                 }
 
@@ -518,21 +518,21 @@ private extension HKWorkoutActivityType {
     var displayName: String {
         switch self {
         case .running:
-            return "Running"
+            return "跑步"
         case .walking:
-            return "Walking"
+            return "步行"
         case .cycling:
-            return "Cycling"
+            return "骑行"
         case .swimming:
-            return "Swimming"
+            return "游泳"
         case .traditionalStrengthTraining:
-            return "Strength Training"
+            return "力量训练"
         case .yoga:
-            return "Yoga"
+            return "瑜伽"
         case .dance:
-            return "Dance"
+            return "跳舞"
         default:
-            return "Workout"
+            return "运动"
         }
     }
 }
@@ -540,7 +540,7 @@ private extension HKWorkoutActivityType {
 
 @MainActor
 final class CloudSyncManager: ObservableObject {
-    @Published var statusMessage = "Enter the pairing code from the parent web dashboard."
+    @Published var statusMessage = "请输入家长网页端生成的配对码。"
     @Published var isUploading = false
 
     private let supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co"
@@ -573,18 +573,18 @@ final class CloudSyncManager: ObservableObject {
         let trimmedCode = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
         guard !trimmedCode.isEmpty else {
-            statusMessage = "Enter a pairing code before syncing settings."
+            statusMessage = "同步设置前，请先输入配对码。"
             return nil
         }
 
         guard let url = URL(string: "\(supabaseUrl)/rest/v1/rpc/get_kiddaily_settings_by_pairing_code") else {
-            statusMessage = "Invalid Supabase URL."
+            statusMessage = "Supabase 地址无效。"
             return nil
         }
 
         do {
             isUploading = true
-            statusMessage = "Syncing settings from web parent dashboard..."
+            statusMessage = "正在从家长网页端同步设置..."
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -597,7 +597,7 @@ final class CloudSyncManager: ObservableObject {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
 
             guard (200...299).contains(statusCode) else {
-                statusMessage = "Settings sync failed. HTTP \(statusCode)."
+                statusMessage = "设置同步失败，HTTP \(statusCode)。"
                 isUploading = false
                 return nil
             }
@@ -606,15 +606,15 @@ final class CloudSyncManager: ObservableObject {
             isUploading = false
 
             guard let firstSettings = settings.first else {
-                statusMessage = "No remote settings found for this pairing code."
+                statusMessage = "没有找到这个配对码对应的远程设置。"
                 return nil
             }
 
-            statusMessage = "Remote settings synced."
+            statusMessage = "远程设置已同步。"
             return firstSettings
         } catch {
             isUploading = false
-            statusMessage = "Settings sync failed: \(error.localizedDescription)"
+            statusMessage = "设置同步失败：\(error.localizedDescription)"
             return nil
         }
     }
@@ -634,12 +634,12 @@ final class CloudSyncManager: ObservableObject {
         let trimmedCode = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
         guard !trimmedCode.isEmpty else {
-            statusMessage = "Enter a pairing code before uploading."
+            statusMessage = "上传前请先输入配对码。"
             return
         }
 
         guard let url = URL(string: "\(supabaseUrl)/rest/v1/rpc/upload_kiddaily_record_by_pairing_code") else {
-            statusMessage = "Invalid Supabase URL."
+            statusMessage = "Supabase 地址无效。"
             return
         }
 
@@ -658,7 +658,7 @@ final class CloudSyncManager: ObservableObject {
 
         do {
             isUploading = true
-            statusMessage = "Uploading today's record..."
+            statusMessage = "正在上传今天的记录..."
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -671,12 +671,12 @@ final class CloudSyncManager: ObservableObject {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
 
             if (200...299).contains(statusCode) {
-                statusMessage = "Uploaded to parent web dashboard."
+                statusMessage = "已上传到家长网页端。"
             } else {
-                statusMessage = "Upload failed. HTTP \(statusCode). Check pairing code and Supabase SQL."
+                statusMessage = "上传失败，HTTP \(statusCode)。请检查配对码和 Supabase SQL。"
             }
         } catch {
-            statusMessage = "Upload failed: \(error.localizedDescription)"
+            statusMessage = "上传失败：\(error.localizedDescription)"
         }
 
         isUploading = false
@@ -744,26 +744,26 @@ struct EncouragementCard: View {
     private var title: String {
         switch completedCount {
         case 0:
-            return "Ready to start?"
+            return "准备开始了吗？"
         case 1:
-            return "Nice start!"
+            return "开头很棒！"
         case 2:
-            return "Almost there!"
+            return "马上完成了！"
         default:
-            return "Great job!"
+            return "做得真好！"
         }
     }
 
     private var message: String {
         switch completedCount {
         case 0:
-            return "Complete your first task to earn game time."
+            return "先完成第一个学习任务，就能获得娱乐时间。"
         case 1:
-            return "You earned \(gameTimeMinutes) minutes. Keep going."
+            return "你已经获得 \(gameTimeMinutes) 分钟，继续加油。"
         case 2:
-            return "One more task unlocks the full reward."
+            return "再完成一个任务，就能解锁完整奖励。"
         default:
-            return "All tasks are done. You unlocked \(maxGameTimeMinutes) minutes."
+            return "今天的任务都完成了，已解锁 \(maxGameTimeMinutes) 分钟。"
         }
     }
 
