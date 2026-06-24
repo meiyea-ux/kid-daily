@@ -1286,10 +1286,10 @@ struct ContentView: View {
             saveTodayRecord()
             screenTimeManager.refreshAuthorizationState()
         }
-        .onChange(of: mathCompleted) { _, _ in updateTodayProgress() }
-        .onChange(of: englishCompleted) { _, _ in updateTodayProgress() }
-        .onChange(of: readingCompleted) { _, _ in updateTodayProgress() }
-        .onChange(of: gameMinutesPerTask) { _, _ in updateTodayProgress() }
+        .onChange(of: mathCompleted) { _ in updateTodayProgress() }
+        .onChange(of: englishCompleted) { _ in updateTodayProgress() }
+        .onChange(of: readingCompleted) { _ in updateTodayProgress() }
+        .onChange(of: gameMinutesPerTask) { _ in updateTodayProgress() }
         #if canImport(FamilyControls)
         .familyActivityPicker(isPresented: $isLearningPickerPresented, selection: $learningActivitySelection)
         .familyActivityPicker(isPresented: $isEntertainmentPickerPresented, selection: $entertainmentActivitySelection)
