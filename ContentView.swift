@@ -708,6 +708,7 @@ struct LearningTaskRow: View {
     let minutes: Int
     let note: String
     let rewardMinutes: Int
+    let scheduleText: String
     let color: Color
     @Binding var isCompleted: Bool
 
@@ -729,6 +730,10 @@ struct LearningTaskRow: View {
 
                 Text("\(minutes) 分钟目标 · 完成奖励 \(rewardMinutes) 分钟")
                     .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text(scheduleText)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
 
                 if !note.isEmpty {
@@ -1122,6 +1127,71 @@ struct ScreenTimeSetupStep: View {
     }
 }
 
+struct TaskRuleEditor: View {
+    let taskLetter: String
+    @Binding var appName: String
+    @Binding var note: String
+    @Binding var weekdays: String
+    @Binding var minutes: Int
+    @Binding var rewardMinutes: Int
+    let color: Color
+
+    private let weekdayItems: [(Int, String)] = [
+        (2, "一"), (3, "二"), (4, "三"), (5, "四"), (6, "五"), (7, "六"), (1, "日")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "\(taskLetter.lowercased()).circle.fill")
+                    .foregroundStyle(color)
+
+                Text("任务 \(taskLetter) · \(appName.isEmpty ? "应用 \(taskLetter)" : appName)")
+                    .font(.headline)
+            }
+
+            TextField("应用 \(taskLetter) 名称", text: $appName)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("任务 \(taskLetter) 学习说明", text: $note)
+                .textFieldStyle(.roundedBorder)
+
+            HStack(spacing: 6) {
+                ForEach(weekdayItems, id: \.0) { day, label in
+                    Button(label) {
+                        toggleWeekday(day)
+                    }
+                    .font(.caption.weight(.semibold))
+                    .frame(width: 34, height: 30)
+                    .background(selectedWeekdays.contains(day) ? color.opacity(0.22) : Color.gray.opacity(0.12))
+                    .foregroundStyle(selectedWeekdays.contains(day) ? color : .secondary)
+                    .clipShape(Capsule())
+                }
+            }
+
+            MinuteWheelRow(title: "每日学习时长", subtitle: "今天是学习日时显示到今日任务", minutes: $minutes, range: 5...180, step: 5, iconName: "clock.fill", tint: color)
+            MinuteWheelRow(title: "完成奖励娱乐时间", subtitle: "完成该任务后进入娱乐余额", minutes: $rewardMinutes, range: 0...60, step: 5, iconName: "gift.fill", tint: color)
+        }
+        .padding()
+        .background(Color.white.opacity(0.82))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var selectedWeekdays: Set<Int> {
+        Set(weekdays.split(separator: ",").compactMap { Int($0) })
+    }
+
+    private func toggleWeekday(_ day: Int) {
+        var selected = selectedWeekdays
+        if selected.contains(day) {
+            selected.remove(day)
+        } else {
+            selected.insert(day)
+        }
+        weekdays = selected.sorted().map(String.init).joined(separator: ",")
+    }
+}
+
 struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager()
     @StateObject private var cloudSyncManager = CloudSyncManager()
@@ -1147,7 +1217,23 @@ struct ContentView: View {
     @AppStorage("taskGMinutes") private var taskGMinutes = 20
     @AppStorage("taskHMinutes") private var taskHMinutes = 20
     @AppStorage("gameMinutesPerTask") private var gameMinutesPerTask = 10
+    @AppStorage("taskARewardMinutes") private var taskARewardMinutes = 10
+    @AppStorage("taskBRewardMinutes") private var taskBRewardMinutes = 10
+    @AppStorage("taskCRewardMinutes") private var taskCRewardMinutes = 10
+    @AppStorage("taskDRewardMinutes") private var taskDRewardMinutes = 10
+    @AppStorage("taskERewardMinutes") private var taskERewardMinutes = 10
+    @AppStorage("taskFRewardMinutes") private var taskFRewardMinutes = 10
+    @AppStorage("taskGRewardMinutes") private var taskGRewardMinutes = 10
+    @AppStorage("taskHRewardMinutes") private var taskHRewardMinutes = 10
     @AppStorage("childName") private var childName = "孩子"
+    @AppStorage("taskAAppName") private var taskAAppName = "应用 A"
+    @AppStorage("taskBAppName") private var taskBAppName = "应用 B"
+    @AppStorage("taskCAppName") private var taskCAppName = "应用 C"
+    @AppStorage("taskDAppName") private var taskDAppName = "应用 D"
+    @AppStorage("taskEAppName") private var taskEAppName = "应用 E"
+    @AppStorage("taskFAppName") private var taskFAppName = "应用 F"
+    @AppStorage("taskGAppName") private var taskGAppName = "应用 G"
+    @AppStorage("taskHAppName") private var taskHAppName = "应用 H"
     @AppStorage("mathNote") private var mathNote = "练习数字和计算能力"
     @AppStorage("englishNote") private var englishNote = "使用英语学习应用完成练习"
     @AppStorage("readingNote") private var readingNote = "阅读一个故事或一本书"
@@ -1156,6 +1242,14 @@ struct ContentView: View {
     @AppStorage("taskFNote") private var taskFNote = "使用应用 F 完成家长设定任务"
     @AppStorage("taskGNote") private var taskGNote = "使用应用 G 完成家长设定任务"
     @AppStorage("taskHNote") private var taskHNote = "使用应用 H 完成家长设定任务"
+    @AppStorage("taskAWeekdays") private var taskAWeekdays = "2,3,4,5,6"
+    @AppStorage("taskBWeekdays") private var taskBWeekdays = "2,3,4,5,6"
+    @AppStorage("taskCWeekdays") private var taskCWeekdays = "7,1"
+    @AppStorage("taskDWeekdays") private var taskDWeekdays = "2,3,4,5,6"
+    @AppStorage("taskEWeekdays") private var taskEWeekdays = "2,3,4,5,6"
+    @AppStorage("taskFWeekdays") private var taskFWeekdays = "2,3,4,5,6"
+    @AppStorage("taskGWeekdays") private var taskGWeekdays = "2,3,4,5,6"
+    @AppStorage("taskHWeekdays") private var taskHWeekdays = "2,3,4,5,6"
     @AppStorage("webPairingCode") private var webPairingCode = ""
     @AppStorage("requiredLearningAppCount") private var requiredLearningAppCount = 2
     @AppStorage("movementStartHour") private var movementStartHour = 17
@@ -1195,17 +1289,16 @@ struct ContentView: View {
     @State private var isEntertainmentPickerPresented = false
     #endif
 
+    private var todayWeekday: Int {
+        Calendar.current.component(.weekday, from: Date())
+    }
+
+    private var activeTodayTaskCount: Int {
+        (0..<enabledTaskCount).filter { taskIsScheduledToday($0) }.count
+    }
+
     private var completedCount: Int {
-        Array([
-            mathCompleted,
-            englishCompleted,
-            readingCompleted,
-            taskDCompleted,
-            taskECompleted,
-            taskFCompleted,
-            taskGCompleted,
-            taskHCompleted
-        ].prefix(enabledTaskCount)).filter { $0 }.count
+        (0..<enabledTaskCount).filter { taskIsScheduledToday($0) && taskCompleted($0) }.count
     }
 
     private var enabledTaskCount: Int {
@@ -1213,11 +1306,17 @@ struct ContentView: View {
     }
 
     private var gameTimeMinutes: Int {
-        min((completedCount * gameMinutesPerTask) + movementRewardMinutesEarned, dailyEarnCapMinutes)
+        let taskRewards = (0..<enabledTaskCount).reduce(0) { total, index in
+            taskIsScheduledToday(index) && taskCompleted(index) ? total + taskRewardMinutes(index) : total
+        }
+        return min(taskRewards + movementRewardMinutesEarned, dailyEarnCapMinutes)
     }
 
     private var maxGameTimeMinutes: Int {
-        min((enabledTaskCount * gameMinutesPerTask) + movementRewardMinutes, dailyEarnCapMinutes)
+        let taskRewards = (0..<enabledTaskCount).reduce(0) { total, index in
+            taskIsScheduledToday(index) ? total + taskRewardMinutes(index) : total
+        }
+        return min(taskRewards + movementRewardMinutes, dailyEarnCapMinutes)
     }
 
     private var entertainmentBalanceMinutes: Int {
@@ -1229,7 +1328,7 @@ struct ContentView: View {
     }
 
     private var allTasksCompleted: Bool {
-        completedCount >= enabledTaskCount
+        activeTodayTaskCount > 0 && completedCount >= activeTodayTaskCount
     }
 
     private var isInsideMovementWindow: Bool {
@@ -1247,6 +1346,63 @@ struct ContentView: View {
 
     private var localizedMovementActivityType: String {
         movementActivityType == "Exercise Minutes" ? AppText.t("exercise_minutes") : AppText.t("workout")
+    }
+
+    private func taskCompleted(_ index: Int) -> Bool {
+        switch index {
+        case 0: return mathCompleted
+        case 1: return englishCompleted
+        case 2: return readingCompleted
+        case 3: return taskDCompleted
+        case 4: return taskECompleted
+        case 5: return taskFCompleted
+        case 6: return taskGCompleted
+        default: return taskHCompleted
+        }
+    }
+
+    private func taskRewardMinutes(_ index: Int) -> Int {
+        switch index {
+        case 0: return taskARewardMinutes
+        case 1: return taskBRewardMinutes
+        case 2: return taskCRewardMinutes
+        case 3: return taskDRewardMinutes
+        case 4: return taskERewardMinutes
+        case 5: return taskFRewardMinutes
+        case 6: return taskGRewardMinutes
+        default: return taskHRewardMinutes
+        }
+    }
+
+    private func taskWeekdays(_ index: Int) -> String {
+        switch index {
+        case 0: return taskAWeekdays
+        case 1: return taskBWeekdays
+        case 2: return taskCWeekdays
+        case 3: return taskDWeekdays
+        case 4: return taskEWeekdays
+        case 5: return taskFWeekdays
+        case 6: return taskGWeekdays
+        default: return taskHWeekdays
+        }
+    }
+
+    private func taskIsScheduledToday(_ index: Int) -> Bool {
+        taskWeekdays(index).split(separator: ",").contains { Int($0) == todayWeekday }
+    }
+
+    private func taskScheduleText(_ index: Int) -> String {
+        let names = [2: "周一", 3: "周二", 4: "周三", 5: "周四", 6: "周五", 7: "周六", 1: "周日"]
+        let days = taskWeekdays(index)
+            .split(separator: ",")
+            .compactMap { Int($0) }
+            .sorted { left, right in
+                let order = [2, 3, 4, 5, 6, 7, 1]
+                return (order.firstIndex(of: left) ?? 0) < (order.firstIndex(of: right) ?? 0)
+            }
+            .compactMap { names[$0] }
+            .joined(separator: "、")
+        return days.isEmpty ? "未设置学习日" : "学习日：\(days)"
     }
 
     private var movementGoalCompleted: Bool {
@@ -2021,87 +2177,107 @@ struct ContentView: View {
 
     private var taskListView: some View {
         VStack(spacing: 12) {
-            LearningTaskRow(
-                title: "任务 A · 应用 A",
-                minutes: mathMinutes,
-                note: mathNote,
-                rewardMinutes: gameMinutesPerTask,
-                color: .blue,
-                isCompleted: $mathCompleted
-            )
+            if activeTodayTaskCount == 0 {
+                Text("今天没有安排学习任务。")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color.white.opacity(0.88))
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+            }
 
-            if enabledTaskCount >= 2 {
+            if taskIsScheduledToday(0) {
                 LearningTaskRow(
-                    title: "任务 B · 应用 B",
+                    title: "任务 A · \(taskAAppName)",
+                    minutes: mathMinutes,
+                    note: mathNote,
+                    rewardMinutes: taskARewardMinutes,
+                    scheduleText: taskScheduleText(0),
+                    color: .blue,
+                    isCompleted: $mathCompleted
+                )
+            }
+
+            if enabledTaskCount >= 2 && taskIsScheduledToday(1) {
+                LearningTaskRow(
+                    title: "任务 B · \(taskBAppName)",
                     minutes: englishMinutes,
                     note: englishNote,
-                    rewardMinutes: gameMinutesPerTask,
+                    rewardMinutes: taskBRewardMinutes,
+                    scheduleText: taskScheduleText(1),
                     color: .purple,
                     isCompleted: $englishCompleted
                 )
             }
 
-            if enabledTaskCount >= 3 {
+            if enabledTaskCount >= 3 && taskIsScheduledToday(2) {
                 LearningTaskRow(
-                    title: "任务 C · 应用 C",
+                    title: "任务 C · \(taskCAppName)",
                     minutes: readingMinutes,
                     note: readingNote,
-                    rewardMinutes: gameMinutesPerTask,
+                    rewardMinutes: taskCRewardMinutes,
+                    scheduleText: taskScheduleText(2),
                     color: .orange,
                     isCompleted: $readingCompleted
                 )
             }
 
-            if enabledTaskCount >= 4 {
+            if enabledTaskCount >= 4 && taskIsScheduledToday(3) {
                 LearningTaskRow(
-                    title: "任务 D · 应用 D",
+                    title: "任务 D · \(taskDAppName)",
                     minutes: taskDMinutes,
                     note: taskDNote,
-                    rewardMinutes: gameMinutesPerTask,
+                    rewardMinutes: taskDRewardMinutes,
+                    scheduleText: taskScheduleText(3),
                     color: .teal,
                     isCompleted: $taskDCompleted
                 )
             }
 
-            if enabledTaskCount >= 5 {
+            if enabledTaskCount >= 5 && taskIsScheduledToday(4) {
                 LearningTaskRow(
-                    title: "任务 E · 应用 E",
+                    title: "任务 E · \(taskEAppName)",
                     minutes: taskEMinutes,
                     note: taskENote,
-                    rewardMinutes: gameMinutesPerTask,
+                    rewardMinutes: taskERewardMinutes,
+                    scheduleText: taskScheduleText(4),
                     color: .cyan,
                     isCompleted: $taskECompleted
                 )
             }
 
-            if enabledTaskCount >= 6 {
+            if enabledTaskCount >= 6 && taskIsScheduledToday(5) {
                 LearningTaskRow(
-                    title: "任务 F · 应用 F",
+                    title: "任务 F · \(taskFAppName)",
                     minutes: taskFMinutes,
                     note: taskFNote,
-                    rewardMinutes: gameMinutesPerTask,
+                    rewardMinutes: taskFRewardMinutes,
+                    scheduleText: taskScheduleText(5),
                     color: .indigo,
                     isCompleted: $taskFCompleted
                 )
             }
 
-            if enabledTaskCount >= 7 {
+            if enabledTaskCount >= 7 && taskIsScheduledToday(6) {
                 LearningTaskRow(
-                    title: "任务 G · 应用 G",
+                    title: "任务 G · \(taskGAppName)",
                     minutes: taskGMinutes,
                     note: taskGNote,
-                    rewardMinutes: gameMinutesPerTask,
+                    rewardMinutes: taskGRewardMinutes,
+                    scheduleText: taskScheduleText(6),
                     color: .pink,
                     isCompleted: $taskGCompleted
                 )
             }
 
-            if enabledTaskCount >= 8 {
+            if enabledTaskCount >= 8 && taskIsScheduledToday(7) {
                 LearningTaskRow(
-                    title: "任务 H · 应用 H",
+                    title: "任务 H · \(taskHAppName)",
                     minutes: taskHMinutes,
                     note: taskHNote,
-                    rewardMinutes: gameMinutesPerTask,
+                    rewardMinutes: taskHRewardMinutes,
+                    scheduleText: taskScheduleText(7),
                     color: .brown,
                     isCompleted: $taskHCompleted
                 )
@@ -2114,10 +2290,10 @@ struct ContentView: View {
             Text(AppText.t("daily_progress"))
                 .font(.headline)
 
-            ProgressView(value: Double(completedCount), total: Double(enabledTaskCount))
+            ProgressView(value: Double(completedCount), total: Double(max(activeTodayTaskCount, 1)))
                 .tint(allTasksCompleted ? .green : .blue)
 
-            Text(AppText.t("progress_rule", gameMinutesPerTask))
+            Text("每个任务按家长设置的学习日、学习时长和奖励规则计算娱乐时间。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -2622,38 +2798,28 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
 
             Stepper("启用任务数：\(enabledTaskCount) / \(maximumTaskCount)", value: $requiredLearningAppCount, in: 1...8, step: 1)
-            MinuteWheelRow(title: "任务 A · 应用 A", subtitle: "家长设定应用 A 的使用目标", minutes: $mathMinutes, range: 5...180, step: 5, iconName: "a.circle.fill", tint: .blue)
-            MinuteWheelRow(title: "任务 B · 应用 B", subtitle: "家长设定应用 B 的使用目标", minutes: $englishMinutes, range: 5...180, step: 5, iconName: "b.circle.fill", tint: .purple)
-            MinuteWheelRow(title: "任务 C · 应用 C", subtitle: "家长设定应用 C 的使用目标", minutes: $readingMinutes, range: 5...180, step: 5, iconName: "c.circle.fill", tint: .orange)
-            MinuteWheelRow(title: "任务 D · 应用 D", subtitle: "启用 4 个任务时，今日页会同步显示", minutes: $taskDMinutes, range: 5...180, step: 5, iconName: "d.circle.fill", tint: .teal)
-            MinuteWheelRow(title: "任务 E · 应用 E", subtitle: "启用 5 个任务时，今日页会同步显示", minutes: $taskEMinutes, range: 5...180, step: 5, iconName: "e.circle.fill", tint: .cyan)
-            MinuteWheelRow(title: "任务 F · 应用 F", subtitle: "启用 6 个任务时，今日页会同步显示", minutes: $taskFMinutes, range: 5...180, step: 5, iconName: "f.circle.fill", tint: .indigo)
-            MinuteWheelRow(title: "任务 G · 应用 G", subtitle: "启用 7 个任务时，今日页会同步显示", minutes: $taskGMinutes, range: 5...180, step: 5, iconName: "g.circle.fill", tint: .pink)
-            MinuteWheelRow(title: "任务 H · 应用 H", subtitle: "启用 8 个任务时，今日页会同步显示", minutes: $taskHMinutes, range: 5...180, step: 5, iconName: "h.circle.fill", tint: .brown)
-
-            TextField("任务 A 说明", text: $mathNote)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("任务 B 说明", text: $englishNote)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("任务 C 说明", text: $readingNote)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("任务 D 说明", text: $taskDNote)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("任务 E 说明", text: $taskENote)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("任务 F 说明", text: $taskFNote)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("任务 G 说明", text: $taskGNote)
-                .textFieldStyle(.roundedBorder)
-
-            TextField("任务 H 说明", text: $taskHNote)
-                .textFieldStyle(.roundedBorder)
+            TaskRuleEditor(taskLetter: "A", appName: $taskAAppName, note: $mathNote, weekdays: $taskAWeekdays, minutes: $mathMinutes, rewardMinutes: $taskARewardMinutes, color: .blue)
+            if enabledTaskCount >= 2 {
+                TaskRuleEditor(taskLetter: "B", appName: $taskBAppName, note: $englishNote, weekdays: $taskBWeekdays, minutes: $englishMinutes, rewardMinutes: $taskBRewardMinutes, color: .purple)
+            }
+            if enabledTaskCount >= 3 {
+                TaskRuleEditor(taskLetter: "C", appName: $taskCAppName, note: $readingNote, weekdays: $taskCWeekdays, minutes: $readingMinutes, rewardMinutes: $taskCRewardMinutes, color: .orange)
+            }
+            if enabledTaskCount >= 4 {
+                TaskRuleEditor(taskLetter: "D", appName: $taskDAppName, note: $taskDNote, weekdays: $taskDWeekdays, minutes: $taskDMinutes, rewardMinutes: $taskDRewardMinutes, color: .teal)
+            }
+            if enabledTaskCount >= 5 {
+                TaskRuleEditor(taskLetter: "E", appName: $taskEAppName, note: $taskENote, weekdays: $taskEWeekdays, minutes: $taskEMinutes, rewardMinutes: $taskERewardMinutes, color: .cyan)
+            }
+            if enabledTaskCount >= 6 {
+                TaskRuleEditor(taskLetter: "F", appName: $taskFAppName, note: $taskFNote, weekdays: $taskFWeekdays, minutes: $taskFMinutes, rewardMinutes: $taskFRewardMinutes, color: .indigo)
+            }
+            if enabledTaskCount >= 7 {
+                TaskRuleEditor(taskLetter: "G", appName: $taskGAppName, note: $taskGNote, weekdays: $taskGWeekdays, minutes: $taskGMinutes, rewardMinutes: $taskGRewardMinutes, color: .pink)
+            }
+            if enabledTaskCount >= 8 {
+                TaskRuleEditor(taskLetter: "H", appName: $taskHAppName, note: $taskHNote, weekdays: $taskHWeekdays, minutes: $taskHMinutes, rewardMinutes: $taskHRewardMinutes, color: .brown)
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2675,7 +2841,6 @@ struct ContentView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            MinuteWheelRow(title: "每完成一个学习任务奖励", subtitle: "进入娱乐时间余额", minutes: $gameMinutesPerTask, range: 5...60, step: 5, iconName: "gift.fill", tint: .blue)
             MinuteWheelRow(title: "每日最多可获得", subtitle: "防止为了攒时间而过度刷任务", minutes: $dailyEarnCapMinutes, range: 10...180, step: 5, iconName: "speedometer", tint: .orange)
 
             Text(AppText.t("max_reward_line", maxGameTimeMinutes))
