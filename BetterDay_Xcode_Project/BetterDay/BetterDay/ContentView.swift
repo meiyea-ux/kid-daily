@@ -707,37 +707,46 @@ struct LearningTaskRow: View {
     let title: String
     let minutes: Int
     let note: String
+    let rewardMinutes: Int
     let color: Color
     @Binding var isCompleted: Bool
 
     var body: some View {
-        Toggle(isOn: $isCompleted) {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.18))
-                        .frame(width: 44, height: 44)
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.18))
+                    .frame(width: 44, height: 44)
 
-                    Image(systemName: isCompleted ? "checkmark" : "book.closed")
-                        .font(.headline)
-                        .foregroundStyle(color)
-                }
+                Image(systemName: isCompleted ? "checkmark" : "book.closed")
+                    .font(.headline)
+                    .foregroundStyle(color)
+            }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.headline)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
 
-                    Text("\(minutes) 分钟")
-                        .font(.subheadline)
+                Text("\(minutes) 分钟目标 · 完成奖励 \(rewardMinutes) 分钟")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if !note.isEmpty {
+                    Text(note)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-
-                    if !note.isEmpty {
-                        Text(note)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
                 }
             }
+
+            Spacer(minLength: 8)
+
+            Button {
+                isCompleted.toggle()
+            } label: {
+                Label(isCompleted ? "撤销" : "完成", systemImage: isCompleted ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
         }
         .padding()
         .background(isCompleted ? Color.green.opacity(0.16) : Color.white.opacity(0.94))
@@ -1539,6 +1548,17 @@ struct ContentView: View {
             Text(movementIsExcusedToday ? "今日已豁免：\(movementExemptionReason)。不奖励娱乐时间，但不破坏连续记录。" : AppText.t("movement_progress_line", movementProgressMinutes, movementTargetMinutes, movementRewardMinutesEarned))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+
+            Button {
+                Task {
+                    await healthSyncManager.requestAuthorizationAndSync()
+                }
+            } label: {
+                Label(healthSyncManager.isSyncing ? AppText.t("syncing") : AppText.t("sync_health_data"), systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(healthSyncManager.isSyncing)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1972,6 +1992,7 @@ struct ContentView: View {
                 title: AppText.t("math"),
                 minutes: mathMinutes,
                 note: mathNote,
+                rewardMinutes: gameMinutesPerTask,
                 color: .blue,
                 isCompleted: $mathCompleted
             )
@@ -1980,6 +2001,7 @@ struct ContentView: View {
                 title: AppText.t("english"),
                 minutes: englishMinutes,
                 note: englishNote,
+                rewardMinutes: gameMinutesPerTask,
                 color: .purple,
                 isCompleted: $englishCompleted
             )
@@ -1988,6 +2010,7 @@ struct ContentView: View {
                 title: AppText.t("reading"),
                 minutes: readingMinutes,
                 note: readingNote,
+                rewardMinutes: gameMinutesPerTask,
                 color: .orange,
                 isCompleted: $readingCompleted
             )
