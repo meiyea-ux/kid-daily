@@ -1,7 +1,7 @@
 {
-  "name": "Kid Daily",
-  "short_name": "KidDaily",
-  "description": "Digital growth report for parents",
+  "name": "倍塔兔",
+  "short_name": "倍塔兔",
+  "description": "每日规则、学习运动和娱乐时间管理工具",
   "start_url": "/daily.html",
   "scope": "/",
   "display": "standalone",

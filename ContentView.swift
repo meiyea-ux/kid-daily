@@ -61,7 +61,7 @@ enum AppText {
         "request_permission": "Request Permission",
         "request_permission_desc": "Request Screen Time access on this iPhone.",
         "select_apps": "Select Apps",
-        "select_apps_desc": "Choose which games or apps are managed by KidDaily.",
+        "select_apps_desc": "Choose which games or apps are managed by Better Rabbit.",
         "apply_limit": "Apply Limit",
         "apply_limit_desc": "Use earned game time to apply a daily screen time limit.",
         "monitor_usage": "Monitor Usage",
@@ -184,8 +184,8 @@ enum AppText {
 
     private static let translations: [String: [String: String]] = [
         "zh-Hans": [
-            "tab_today": "今日", "tab_apps": "应用", "tab_move": "运动", "tab_records": "记录", "tab_parent": "家长",
-            "parent_dashboard": "家长控制台", "lock": "锁定", "streak": "连续", "days": "天", "game_time": "娱乐时间",
+            "tab_today": "今日", "tab_apps": "应用", "tab_move": "运动", "tab_records": "记录", "tab_parent": "规则",
+            "parent_dashboard": "规则控制台", "lock": "锁定", "streak": "连续", "days": "天", "game_time": "娱乐时间",
             "learning_unlock": "学习解锁", "learning_unlock_desc": "先锁定娱乐应用。学习应用达到时长后奖励娱乐时间。",
             "required": "需要", "study_apps": "学习应用", "earned": "已获得", "minutes": "分钟", "app_groups": "应用分组",
             "app_groups_desc": "选择要监测的学习应用，以及要锁定或解锁的娱乐应用。自动读取使用时长需要下一步在 Xcode 添加 DeviceActivity 扩展。",
@@ -194,26 +194,26 @@ enum AppText {
             "today_learning": "今日学习", "today_message": "%@，完成学习应用目标即可获得娱乐时间。", "daily_progress": "今日进度",
             "math": "数学", "english": "英语", "reading": "阅读", "movement_check": "运动检测", "movement_subtitle": "同步 iPhone 健康和 Apple Watch 的运动数据。",
             "health_data_sync": "健康数据同步", "request_health_permission": "请求健康权限", "sync_health_data": "同步健康数据", "syncing": "同步中...",
-            "parent_area_locked": "家长区已锁定", "parent_pin_prompt": "输入家长 PIN 查看记录和设置。", "parent_pin": "家长 PIN", "unlock_parent_area": "解锁家长区",
+            "parent_area_locked": "规则区已锁定", "parent_pin_prompt": "输入管理 PIN 查看记录和设置。", "parent_pin": "管理 PIN", "unlock_parent_area": "解锁规则区",
             "movement_window": "运动时段", "movement_window_desc": "设置每日活动时段和运动奖励。", "reward_rule": "奖励规则", "learning_app_goals": "学习应用目标",
-            "child_profile": "孩子资料", "child_name": "孩子姓名", "parent_notes": "家长备注", "incorrect_pin": "PIN 不正确，请重试。",
+            "child_profile": "用户资料", "child_name": "昵称", "parent_notes": "备注", "incorrect_pin": "PIN 不正确，请重试。",
             "app_name": "倍塔兔", "nav_records": "每日记录", "parent_subtitle": "设置学习应用目标、奖励分钟数、娱乐锁定和运动时段。",
             "screen_time_api": "屏幕使用时间 API", "authorization": "授权：%@", "current_earned_limit": "当前已获得上限：%d 分钟",
             "request_screen_time_permission": "请求屏幕使用时间权限", "select_apps_categories": "选择应用和类别", "apply_earned_limit": "应用已获得上限", "clear_screen_time_restrictions": "清除屏幕使用限制",
             "setup_screen_time": "设置屏幕使用时间", "setup_screen_time_subtitle": "Apple 屏幕使用时间集成准备清单。", "request_permission": "请求权限", "request_permission_desc": "在这台 iPhone 上请求屏幕使用时间权限。",
             "select_apps": "选择应用", "select_apps_desc": "选择由倍塔兔管理的游戏或应用。", "apply_limit": "应用限制", "apply_limit_desc": "用已获得娱乐时间应用每日屏幕使用限制。", "monitor_usage": "监测使用",
-            "monitor_usage_desc": "读取活动报告并更新家长控制台。", "continuous_learning": "连续学习", "day_streak": "%d 天连续", "game_time_unlocked": "娱乐已解锁：%d 分钟", "game_time_locked": "娱乐时间待解锁",
+            "monitor_usage_desc": "读取活动报告并更新规则控制台。", "continuous_learning": "连续学习", "day_streak": "%d 天连续", "game_time_unlocked": "娱乐已解锁：%d 分钟", "game_time_locked": "娱乐时间待解锁",
             "min_earned": "分钟已获得", "completed_count": "已完成：%d / %d", "progress_rule": "每完成一个学习应用目标，可获得 %d 分钟娱乐时间。", "date": "日期", "completed": "已完成",
-            "record_detail": "记录详情", "done": "完成", "not_done": "未完成", "parent_pin_desc": "修改用于打开家长页的 PIN。", "history": "历史", "no_records": "还没有每日记录。",
+            "record_detail": "记录详情", "done": "完成", "not_done": "未完成", "parent_pin_desc": "修改用于打开规则页的 PIN。", "history": "历史", "no_records": "还没有每日记录。",
             "no_records_desc": "完成今天的任务后会生成记录。", "reset_today": "重置今天", "summary": "汇总", "tasks": "任务", "steps": "步数", "today": "今天",
             "exercise": "运动", "min_today": "今日分钟", "active_energy": "活动能量", "latest_workout": "最近运动", "health_sync_desc": "读取今天的步数、Apple 运动分钟、活动能量和最近运动。Apple Watch 运动同步到 iPhone 健康 App 后会显示在这里。",
             "current_streak": "当前连续", "last_7_days": "最近 7 天", "perfect_days": "完美天数", "movement_results": "运动结果", "movement_today": "今天：%d 步，%d 分钟运动，%d 千卡。",
-            "latest_workout_line": "最近运动：%@，%d 分钟。", "refresh_movement_data": "刷新运动数据", "web_parent_sync": "家长网页同步", "web_parent_sync_desc": "输入家长网页控制台生成的配对码。今天的学习和娱乐时间会上传，方便远程查看。",
+            "latest_workout_line": "最近运动：%@，%d 分钟。", "refresh_movement_data": "刷新运动数据", "web_parent_sync": "管理网页同步", "web_parent_sync_desc": "输入管理网页控制台生成的配对码。今天的学习和娱乐时间会上传，方便远程查看。",
             "pairing_code": "配对码", "sync_remote_settings": "同步远程设置", "uploading": "上传中...", "upload_today_record": "上传今日记录", "auth_failed": "授权失败：%@", "screen_time_denied_help": "屏幕使用时间权限被拒绝。请使用真机，确认 Apple Developer 里该 Bundle ID 已开启 Family Controls 能力，然后删除并重装 App 后重新请求。", "opening_picker": "正在打开应用和类别选择器...",
             "picker_unavailable": "当前构建不可用 FamilyActivityPicker。", "status_not_requested": "尚未请求屏幕使用时间权限。", "status_denied": "屏幕使用时间权限已被拒绝。", "status_approved": "屏幕使用时间权限已通过。",
             "status_unknown": "未知的屏幕使用时间授权状态。", "requesting_screen_time": "正在请求屏幕使用时间权限...", "approve_before_limit": "应用限制前，请先批准屏幕使用时间权限。", "select_before_limit": "应用屏幕使用限制前，请先选择应用或类别。",
             "limit_applied": "已对所选应用应用屏幕使用限制。已获得上限：%d 分钟。", "limit_zero": "还没有获得娱乐时间。所选应用和类别已被限制。", "restrictions_cleared": "屏幕使用限制已清除。", "unavailable_build": "当前构建不可用 FamilyControls。",
-            "entertainment_unlocked_status": "娱乐应用已按 %d 分钟奖励时间解锁。", "entertainment_locked_status": "娱乐应用会保持锁定，直到学习或运动目标完成。", "child_profile_desc": "设置今日页面显示的孩子姓名。",
+            "entertainment_unlocked_status": "娱乐应用已按 %d 分钟奖励时间解锁。", "entertainment_locked_status": "娱乐应用会保持锁定，直到学习或运动目标完成。", "child_profile_desc": "设置今日页面显示的昵称。",
             "learning_app_goals_desc": "调整每个每日学习应用的预期使用时长。", "required_study_apps": "必需学习应用：%d", "math_app_minutes": "数学应用：%d 分钟", "english_app_minutes": "英语应用：%d 分钟", "reading_app_minutes": "阅读应用：%d 分钟",
             "reward_rule_desc": "设置每完成一个学习应用可获得多少娱乐时间。", "max_reward_line": "完成所有学习目标后，运动奖励前最多可解锁 %d 分钟。", "reward_per_app": "奖励：每完成一个学习应用 %d 分钟",
             "start_hour": "开始：%d:00", "end_hour": "结束：%d:00", "goal_minutes": "目标：%d 分钟", "reward_minutes": "奖励：%d 分钟", "activity": "活动", "workout": "运动", "exercise_minutes": "运动分钟", "parent_notes_desc": "下一步构建：添加 DeviceActivityMonitor 扩展，让学习应用分钟数自动读取，而不是手动勾选。", "new_parent_pin": "新的 4 位 PIN", "save_new_pin": "保存新 PIN"
@@ -570,7 +570,7 @@ private extension HKWorkoutActivityType {
 
 @MainActor
 final class CloudSyncManager: ObservableObject {
-    @Published var statusMessage = "请输入家长网页端生成的配对码。"
+    @Published var statusMessage = "请输入管理网页端生成的配对码。"
     @Published var isUploading = false
 
     private let supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co"
@@ -621,7 +621,7 @@ final class CloudSyncManager: ObservableObject {
 
         do {
             isUploading = true
-            statusMessage = "正在从家长网页端同步设置..."
+            statusMessage = "正在从管理网页端同步设置..."
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -722,7 +722,7 @@ final class CloudSyncManager: ObservableObject {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
 
             if (200...299).contains(statusCode) {
-                statusMessage = "已上传到家长网页端。"
+                statusMessage = "已上传到管理网页端。"
             } else {
                 statusMessage = "上传失败，HTTP \(statusCode)。请检查配对码和 Supabase SQL。"
             }
@@ -1380,15 +1380,15 @@ struct ContentView: View {
     @AppStorage("taskFRewardMinutes") private var taskFRewardMinutes = 10
     @AppStorage("taskGRewardMinutes") private var taskGRewardMinutes = 10
     @AppStorage("taskHRewardMinutes") private var taskHRewardMinutes = 10
-    @AppStorage("childName") private var childName = "孩子"
+    @AppStorage("childName") private var childName = "我"
     @AppStorage("mathNote") private var mathNote = "练习数字和计算能力"
     @AppStorage("englishNote") private var englishNote = "使用英语学习应用完成练习"
     @AppStorage("readingNote") private var readingNote = "阅读一个故事或一本书"
-    @AppStorage("taskDNote") private var taskDNote = "使用应用 D 完成家长设定任务"
-    @AppStorage("taskENote") private var taskENote = "使用应用 E 完成家长设定任务"
-    @AppStorage("taskFNote") private var taskFNote = "使用应用 F 完成家长设定任务"
-    @AppStorage("taskGNote") private var taskGNote = "使用应用 G 完成家长设定任务"
-    @AppStorage("taskHNote") private var taskHNote = "使用应用 H 完成家长设定任务"
+    @AppStorage("taskDNote") private var taskDNote = "使用应用 D 完成设定任务"
+    @AppStorage("taskENote") private var taskENote = "使用应用 E 完成设定任务"
+    @AppStorage("taskFNote") private var taskFNote = "使用应用 F 完成设定任务"
+    @AppStorage("taskGNote") private var taskGNote = "使用应用 G 完成设定任务"
+    @AppStorage("taskHNote") private var taskHNote = "使用应用 H 完成设定任务"
     @AppStorage("taskAWeekdays") private var taskAWeekdays = "2,3,4,5,6"
     @AppStorage("taskBWeekdays") private var taskBWeekdays = "2,3,4,5,6"
     @AppStorage("taskCWeekdays") private var taskCWeekdays = "7,1"
@@ -2258,7 +2258,7 @@ struct ContentView: View {
 
     private var accountView: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("查看历史记录、提交反馈，并管理家长端和孩子端绑定。")
+            Text("查看历史记录、提交反馈，并管理规则同步与设备绑定。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2387,11 +2387,11 @@ struct ContentView: View {
                 Image(systemName: "qrcode.viewfinder")
                     .foregroundStyle(.blue)
 
-                Text("家长端 / 孩子端绑定")
+                Text("管理端 / 使用端绑定")
                     .font(.headline)
             }
 
-            Text("家长可以扫码或输入绑定码，远程制定规则、查看今日状态并审批豁免。")
+            Text("可扫码或输入绑定码，远程制定规则、查看今日状态并处理延期申请。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2437,7 +2437,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("当前原型同时支持家庭儿童、学生自律和成人自律的产品逻辑。儿童模式需要家长审批；成人模式可自我豁免并保留记录。")
+            Text("当前原型支持学生自律、成人自律和家庭协作等多种场景。可按需要选择自我管理或协作管理。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -2510,7 +2510,7 @@ struct ContentView: View {
             .buttonStyle(.borderedProminent)
 
             Button {
-                parentPINError = "请使用恢复码 \(parentBindingCode) 或家长端确认来重置密码。"
+                parentPINError = "请使用恢复码 \(parentBindingCode) 或管理端确认来重置密码。"
             } label: {
                 Label("忘记密码？", systemImage: "questionmark.circle")
                     .frame(maxWidth: .infinity)
@@ -2523,12 +2523,26 @@ struct ContentView: View {
     }
 
     private var headerView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("今日任务")
-                .font(.largeTitle)
-                .bold()
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(AppText.t("app_name"))
+                    .font(.largeTitle)
+                    .bold()
 
-            Text("\(childName)，先完成重要任务，再使用可控娱乐时间。")
+                Text("Do Better Day")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.blue)
+
+                Text("先学习，再娱乐，赢得美好一天")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, 10)
+
+            Text("今日任务")
+                .font(.title.weight(.bold))
+
+            Text("先完成重要任务，再使用可控娱乐时间。")
                 .font(.body)
                 .foregroundStyle(.secondary)
         }
@@ -2938,7 +2952,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("孩子可以自己选择今日延期运动。延期当天不发运动奖励、不打断连续记录；周末补回时按折扣补发娱乐时间。")
+            Text("今天确实不适合运动时，可以选择延期。延期当天不发运动奖励、不打断连续记录；周末补回时按折扣补发娱乐时间。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2962,7 +2976,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("孩子完成任务赚到的娱乐时间会进入余额。实际可用时间还会受到工作日/周末总上限和可用时段限制。")
+            Text("完成任务赚到的娱乐时间会进入余额。实际可用时间还会受到工作日/周末总上限和可用时段限制。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -3037,7 +3051,7 @@ struct ContentView: View {
 
             TimeWindowSummaryRow(
                 appName: "系统选择的娱乐 APP",
-                category: "由家长在系统选择器中指定",
+                category: "由用户在系统选择器中指定",
                 weekdayWindow: entertainmentWindowText(start: entertainmentWeekdayStartHour, end: entertainmentWeekdayEndHour),
                 weekendWindow: entertainmentWindowText(start: entertainmentWeekendStartHour, end: entertainmentWeekendEndHour),
                 limitText: "完成任务后解锁，到时自动锁定",
@@ -3063,7 +3077,7 @@ struct ContentView: View {
             Text("恢复码：\(parentBindingCode)")
                 .font(.headline)
 
-            Text("重置密码不会删除规则和记录。正式版可加入 Face ID、邮箱验证码或家长端确认。")
+            Text("重置密码不会删除规则和记录。正式版可加入 Face ID、邮箱验证码或管理端确认。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -3206,7 +3220,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("运动默认每日必须完成；特殊情况可以申请豁免，家长可选择补做机制。")
+            Text("运动默认每日必须完成；特殊情况可以申请豁免，可在规则中选择补做机制。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -3326,7 +3340,7 @@ struct ContentView: View {
 
     private func normalizeStoredChineseText() {
         if childName == "Kid" {
-            childName = "孩子"
+            childName = "我"
         }
 
         if mathNote == "Practice number skills" {

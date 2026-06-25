@@ -341,7 +341,7 @@ function mapProductRowsToReports(children, reports, usageRows) {
     }));
 
     return {
-      name: child?.name || "KidDaily",
+      name: child?.name || "倍塔兔",
       date: report.report_date,
       totalMinutes: report.total_minutes,
       learningMinutes: report.learning_minutes,
@@ -1144,7 +1144,7 @@ function exportReport() {
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = `KidDaily-${report.name}-${report.date}.txt`;
+  link.download = `倍塔兔-${report.name}-${report.date}.txt`;
   link.click();
   URL.revokeObjectURL(url);
 }
