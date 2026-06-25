@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2563eb">
-  <title>孩子端上传 - Kid Daily</title>
+  <title>使用端上传 - 倍塔兔</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
@@ -14,16 +14,16 @@
   <main class="child-app-page">
     <header class="child-hero">
       <a class="back-link" href="index.html">返回首页</a>
-      <div class="brand-badge small">KD</div>
-      <p class="tagline">孩子端上传</p>
+      <div class="brand-badge small">倍</div>
+      <p class="tagline">使用端上传</p>
       <h1>上传今天的屏幕使用</h1>
-      <p>先做手动上传版本：在孩子的 iPad 或 iPhone 上填写 App 使用时间，家长端会自动生成日报。</p>
+      <p>先做手动上传版本：在 iPad 或 iPhone 上填写 App 使用时间，管理端会自动生成每日记录。</p>
     </header>
 
     <section class="child-auth-card" id="child-auth-card">
-      <span class="label">家长账号</span>
+      <span class="label">管理账号</span>
       <h2>登录后上传到云端</h2>
-      <p id="child-auth-message">请使用家长账号登录。这个版本不会自动读取屏幕使用时间，需要手动填写。</p>
+      <p id="child-auth-message">请使用管理账号登录。这个版本不会自动读取屏幕使用时间，需要手动填写。</p>
       <div class="child-auth-form">
         <input class="auth-input" id="child-auth-email" type="email" placeholder="邮箱">
         <input class="auth-input" id="child-auth-password" type="password" placeholder="密码">
@@ -42,11 +42,11 @@
         <h2>填写 App 使用记录</h2>
       </div>
 
-      <label class="field-label" for="child-selector">选择孩子</label>
+      <label class="field-label" for="child-selector">选择用户</label>
       <select class="text-input" id="child-selector">
         <option value="Lucy">Lucy</option>
       </select>
-      <p class="child-helper-text" id="child-selector-helper">本设备会记住选择，下次自动使用同一个孩子。</p>
+      <p class="child-helper-text" id="child-selector-helper">本设备会记住选择，下次自动使用同一个用户。</p>
 
       <div class="mobile-app-list" id="mobile-app-list">
         <div class="mobile-app-row">
@@ -79,7 +79,7 @@
       <h2>今日数据已同步</h2>
       <div class="child-success-grid">
         <div>
-          <span>孩子</span>
+          <span>用户</span>
           <strong id="success-child-name">-</strong>
         </div>
         <div>
@@ -91,24 +91,24 @@
           <strong id="success-score">-</strong>
         </div>
       </div>
-      <a class="primary-button" href="daily.html">查看家长日报</a>
+      <a class="primary-button" href="daily.html">查看每日记录</a>
     </section>
 
     <section class="child-preview-card" id="child-preview-card">
       <span class="label">上传说明</span>
       <h2>当前是手机客户端 MVP</h2>
-      <p>这个页面适合先验证“孩子设备上传，家长网页查看”的闭环。真正自动读取 iOS 屏幕使用时间，需要后续开发原生 iOS App。</p>
+      <p>这个页面适合先验证“使用端上传，管理网页查看”的闭环。真正自动读取 iOS 屏幕使用时间，需要后续开发原生 iOS App。</p>
     </section>
   </main>
 
   <nav class="mobile-tab-bar" aria-label="手机端导航">
     <a class="active" href="child.html">
       <strong>上传</strong>
-      <span>孩子端</span>
+      <span>使用端</span>
     </a>
     <a href="daily.html">
       <strong>日报</strong>
-      <span>家长端</span>
+      <span>管理端</span>
     </a>
     <a href="import.html">
       <strong>导入</strong>

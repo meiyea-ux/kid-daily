@@ -1347,6 +1347,45 @@ struct TaskRuleEditor<SelectedAppContent: View>: View {
     }
 }
 
+struct BetterRabbitSplashView: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.94, green: 0.99, blue: 0.98),
+                    Color(red: 0.90, green: 0.95, blue: 1.00)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                Image("BrandMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 132, height: 132)
+                    .shadow(color: .black.opacity(0.10), radius: 18, x: 0, y: 10)
+
+                VStack(spacing: 8) {
+                    Text("倍塔兔")
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(Color(red: 0.05, green: 0.18, blue: 0.34))
+
+                    Text("Do Better Day")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.blue)
+
+                    Text("先学习，再娱乐，赢得美好一天")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.bottom, 36)
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager()
     @StateObject private var cloudSyncManager = CloudSyncManager()
@@ -1436,6 +1475,7 @@ struct ContentView: View {
     @State private var feedbackScreenshotItem: PhotosPickerItem?
     @State private var feedbackScreenshotAttached = false
     @State private var feedbackStatusMessage = ""
+    @State private var showLaunchSplash = true
 
     private let parentAutoLockSeconds: TimeInterval = 60
     private let parentAutoLockTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
@@ -1908,11 +1948,23 @@ struct ContentView: View {
             }
             .tag(2)
         }
+        .overlay {
+            if showLaunchSplash {
+                BetterRabbitSplashView()
+                    .transition(.opacity)
+                    .accessibilityHidden(true)
+            }
+        }
         .onAppear {
             normalizeStoredChineseText()
             prepareToday()
             saveTodayRecord()
             screenTimeManager.refreshAuthorizationState()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+                withAnimation(.easeOut(duration: 0.35)) {
+                    showLaunchSplash = false
+                }
+            }
         }
         .onChange(of: mathCompleted) { _ in updateTodayProgress() }
         .onChange(of: englishCompleted) { _ in updateTodayProgress() }

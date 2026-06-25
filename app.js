@@ -100,7 +100,7 @@ function renderReminder() {
     input.value = savedTime;
   }
 
-  setText("reminder-summary", `每天 ${savedTime} 提醒查看孩子数字日报`);
+  setText("reminder-summary", `每天 ${savedTime} 提醒查看倍塔兔每日记录`);
 }
 
 function saveReminder() {
@@ -278,13 +278,13 @@ function createPairingCode() {
 
 async function getSelectedChildIdForRemoteSync() {
   if (!currentUser) {
-    throw new Error("请先登录家长账号。");
+    throw new Error("请先登录管理账号。");
   }
 
   const report = getActiveReport();
 
   if (!report) {
-    throw new Error("请先选择一个孩子。");
+    throw new Error("请先选择一个用户。");
   }
 
   return findOrCreateChild(report);
@@ -292,7 +292,7 @@ async function getSelectedChildIdForRemoteSync() {
 
 async function generatePairingCodeForSelectedChild() {
   if (!supabaseClient || !currentUser) {
-    setText("pairing-code-helper", "请先登录家长账号。");
+    setText("pairing-code-helper", "请先登录管理账号。");
     return;
   }
 
@@ -314,7 +314,7 @@ async function generatePairingCodeForSelectedChild() {
     }
 
     setText("pairing-code-value", pairingCode);
-    setText("pairing-code-helper", "绑定码 30 分钟内有效。请在儿童 iOS App 中输入。");
+    setText("pairing-code-helper", "绑定码 30 分钟内有效。请在倍塔兔 iOS App 中输入。");
   } catch (error) {
     setText("pairing-code-helper", `生成失败：${error.message}`);
   }
@@ -362,7 +362,7 @@ function mapProductRowsToReports(children, reports, usageRows) {
 
 async function refreshIosRecordsFromProductTables() {
   if (!supabaseClient || !currentUser) {
-    setText("save-status", "请先登录家长账号。");
+    setText("save-status", "请先登录管理账号。");
     return;
   }
 
@@ -454,7 +454,7 @@ function fillRemoteSettingsForm(settings) {
 
 async function loadRemoteSettingsForSelectedChild() {
   if (!supabaseClient || !currentUser) {
-    setText("remote-settings-status", "请先登录家长账号。");
+    setText("remote-settings-status", "请先登录管理账号。");
     return;
   }
 
@@ -487,7 +487,7 @@ async function loadRemoteSettingsForSelectedChild() {
 
 async function saveRemoteSettingsForSelectedChild() {
   if (!supabaseClient || !currentUser) {
-    setText("remote-settings-status", "请先登录家长账号。");
+    setText("remote-settings-status", "请先登录管理账号。");
     return;
   }
 
@@ -508,7 +508,7 @@ async function saveRemoteSettingsForSelectedChild() {
       throw error;
     }
 
-    setText("remote-settings-status", "已保存远程设置。儿童 App 同步后会使用新的娱乐时间规则。");
+    setText("remote-settings-status", "已保存远程设置。App 同步后会使用新的娱乐时间规则。");
   } catch (error) {
     setText("remote-settings-status", `保存失败：${error.message}`);
   }
@@ -553,7 +553,7 @@ function setAuthView(user) {
     appContent.classList.remove("locked");
     authForm.style.display = "none";
     authUser.style.display = "grid";
-    setText("auth-title", "已登录，可以查看孩子日报");
+    setText("auth-title", "已登录，可以查看每日记录");
     setText("auth-user-email", user.email);
     setAuthMessage("账号登录成功。正在同步云端数据。");
     loadReportsFromCloud(user);
@@ -563,7 +563,7 @@ function setAuthView(user) {
   appContent.classList.add("locked");
   authForm.style.display = "grid";
   authUser.style.display = "none";
-  setText("auth-title", "登录后查看孩子日报");
+  setText("auth-title", "登录后查看每日记录");
   setText("auth-user-email", "");
   setAuthMessage("使用邮箱和密码登录。第一次使用可以先注册账号。");
 }
@@ -794,7 +794,7 @@ function createAiComment(report) {
   const score = calculateGrowthScore(report);
   const rating = getRating(score);
 
-  return `今天的数字成长评分为${score}分，评级为${rating}。学习时间为${formatMinutes(minutes.learningMinutes)}，阅读时间为${formatMinutes(minutes.readingMinutes)}，这两项为孩子的数字使用质量提供了积极支撑；娱乐时间为${formatMinutes(minutes.entertainmentMinutes)}，仍需保持边界感。建议明天继续保留阅读习惯，并优先把15分钟视频时间转移到学习或亲子讨论中。`;
+  return `今天的自律成长评分为${score}分，评级为${rating}。学习时间为${formatMinutes(minutes.learningMinutes)}，阅读时间为${formatMinutes(minutes.readingMinutes)}，这两项为数字使用质量提供了积极支撑；娱乐时间为${formatMinutes(minutes.entertainmentMinutes)}，仍需保持边界感。建议明天继续保留阅读习惯，并优先把15分钟视频时间转移到学习或复盘讨论中。`;
 }
 
 function renderTopApps(apps) {
@@ -1109,9 +1109,9 @@ function buildExportText(report) {
   const rating = getRating(score);
 
   return [
-    "Kid Daily 数字成长日报",
+    "倍塔兔每日记录",
     "",
-    `孩子：${report.name}`,
+    `用户：${report.name}`,
     `日期：${report.date}`,
     `成长评分：${score}分（${rating}）`,
     "",
@@ -1255,14 +1255,14 @@ function addChild() {
   const name = input.value.trim();
 
   if (!name) {
-    setText("save-status", "请先输入孩子名字。");
+    setText("save-status", "请先输入用户昵称。");
     return;
   }
 
   const exists = dailyReports.some((report) => report.name.toLowerCase() === name.toLowerCase());
 
   if (exists) {
-    setText("save-status", "这个孩子已经存在，请换一个名字。");
+    setText("save-status", "这个用户已经存在，请换一个昵称。");
     return;
   }
 
@@ -1271,7 +1271,7 @@ function addChild() {
   saveReports();
   renderChildButtons(dailyReports.length - 1);
   showReport(dailyReports.length - 1);
-  setText("save-status", `已新增孩子：${name}`);
+  setText("save-status", `已新增用户：${name}`);
 }
 
 document.getElementById("save-data-button").addEventListener("click", saveReports);

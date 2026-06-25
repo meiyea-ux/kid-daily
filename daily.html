@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2563eb">
-  <title>数字成长日报 - Kid Daily</title>
+  <title>每日记录 - 倍塔兔</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
@@ -14,16 +14,16 @@
   <main class="daily-page">
     <header class="page-header">
       <a class="back-link" href="index.html">返回首页</a>
-      <div class="brand-badge small">KD</div>
-      <p class="tagline">孩子 iPad 和 iPhone 使用情况</p>
-      <h1>数字成长日报</h1>
-      <p class="page-subtitle">用更清晰的数据，帮助家长理解孩子今天的数字生活。</p>
+      <div class="brand-badge small">倍</div>
+      <p class="tagline">Do Better Day</p>
+      <h1>倍塔兔每日记录</h1>
+      <p class="page-subtitle">用更清晰的数据，复盘今天的学习、运动、阅读和娱乐时间。</p>
     </header>
 
     <section class="auth-panel" id="auth-panel" aria-label="账号登录">
       <div class="auth-copy">
-        <span class="label">家长账号</span>
-        <h2 id="auth-title">登录后查看孩子日报</h2>
+        <span class="label">管理账号</span>
+        <h2 id="auth-title">登录后查看每日记录</h2>
         <p id="auth-message">使用邮箱和密码登录。第一次使用可以先注册账号。</p>
       </div>
       <div class="auth-form" id="auth-form">
@@ -41,12 +41,12 @@
 
     <div class="app-content locked" id="app-content">
 
-    <section class="child-switcher" id="child-switcher" aria-label="选择孩子">
+    <section class="child-switcher" id="child-switcher" aria-label="选择用户">
     </section>
 
-    <section class="add-child-panel" aria-label="新增孩子">
-      <input class="child-name-input" id="new-child-name" type="text" placeholder="输入孩子名字，例如 Leo">
-      <button class="secondary-button" type="button" id="add-child-button">新增孩子</button>
+    <section class="add-child-panel" aria-label="新增用户">
+      <input class="child-name-input" id="new-child-name" type="text" placeholder="输入用户昵称，例如 Leo">
+      <button class="secondary-button" type="button" id="add-child-button">新增用户</button>
     </section>
 
     <section class="save-panel" aria-label="保存日报数据">
@@ -60,8 +60,8 @@
     <section class="remote-sync-panel" aria-label="iOS App 远程同步">
       <div>
         <span class="label">iOS App 同步</span>
-        <h2>家长远程监控</h2>
-        <p>为当前孩子生成绑定码；儿童 iOS App 绑定后，家长可以在网页端刷新查看学习和娱乐时间。</p>
+        <h2>远程规则同步</h2>
+        <p>为当前用户生成绑定码；iOS App 绑定后，可以在网页端刷新查看学习和娱乐时间。</p>
       </div>
       <div class="remote-sync-actions">
         <button class="secondary-button" type="button" id="generate-pairing-code-button">生成绑定码</button>
@@ -70,15 +70,15 @@
       <div class="pairing-code-box" id="pairing-code-box">
         <span>绑定码</span>
         <strong id="pairing-code-value">------</strong>
-        <em id="pairing-code-helper">请先登录并选择孩子。</em>
+        <em id="pairing-code-helper">请先登录并选择用户。</em>
       </div>
     </section>
 
     <section class="remote-settings-panel" aria-label="远程娱乐时间设置">
       <div>
         <span class="label">远程设置</span>
-        <h2>调整孩子 App 的任务和娱乐时间</h2>
-        <p>保存后，儿童 iOS App 在输入绑定码并同步设置时，会使用这里的任务时长和娱乐时间奖励规则。</p>
+        <h2>调整任务和娱乐时间</h2>
+        <p>保存后，iOS App 在输入绑定码并同步设置时，会使用这里的任务时长和娱乐时间奖励规则。</p>
       </div>
       <div class="remote-settings-grid">
         <label>
@@ -124,7 +124,7 @@
         <button class="secondary-button" type="button" id="load-remote-settings-button">读取远程设置</button>
         <button class="save-button" type="button" id="save-remote-settings-button">保存远程设置</button>
       </div>
-      <p id="remote-settings-status">请先登录并选择孩子。</p>
+      <p id="remote-settings-status">请先登录并选择用户。</p>
     </section>
 
     <section class="reminder-panel" aria-label="每日提醒">
@@ -180,7 +180,7 @@
 
     <section class="report-summary">
       <div>
-        <span class="label">孩子</span>
+        <span class="label">用户</span>
         <strong id="child-name"></strong>
       </div>
       <div>
@@ -248,7 +248,7 @@
 
     <section class="risk-card" aria-label="风险提醒">
       <span class="label">风险提醒</span>
-      <h2>需要家长关注的地方</h2>
+      <h2>需要关注的地方</h2>
       <div class="risk-list" id="risk-list"></div>
     </section>
 
@@ -272,7 +272,7 @@
 
     <section class="app-timeline-card" aria-label="今日使用时间轴">
       <span class="label">今日使用时间轴</span>
-      <h2>孩子什么时候在用设备</h2>
+      <h2>什么时候在用设备</h2>
       <div class="timeline-axis">
         <span>06:00</span>
         <span>12:00</span>
@@ -291,7 +291,7 @@
 
       <article class="weekly-summary-card">
         <span class="label">本周总结</span>
-        <h2>家长关注重点</h2>
+        <h2>关注重点</h2>
         <p id="weekly-summary"></p>
       </article>
     </section>
@@ -304,7 +304,7 @@
 
     <section class="ai-comment-box">
       <span class="label">AI 成长建议</span>
-      <h2>给家长的专业建议</h2>
+      <h2>专业建议</h2>
       <p id="ai-comment"></p>
       <button class="ai-button" type="button" id="generate-ai-button">生成真实 AI 建议</button>
       <p class="ai-status" id="ai-status">当前显示模拟 AI 成长建议。</p>
