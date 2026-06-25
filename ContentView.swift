@@ -93,7 +93,7 @@ enum AppText {
         "movement_subtitle": "Sync exercise results from iPhone Health and Apple Watch.",
         "history": "History",
         "no_records": "No daily records yet.",
-        "no_records_desc": "Complete or reset today's tasks to create a record.",
+        "no_records_desc": "Complete today's tasks to create a record.",
         "reset_today": "Reset Today",
         "summary": "Summary",
         "tasks": "Tasks",
@@ -205,7 +205,7 @@ enum AppText {
             "monitor_usage_desc": "读取活动报告并更新家长控制台。", "continuous_learning": "连续学习", "day_streak": "%d 天连续", "game_time_unlocked": "娱乐已解锁：%d 分钟", "game_time_locked": "娱乐时间待解锁",
             "min_earned": "分钟已获得", "completed_count": "已完成：%d / %d", "progress_rule": "每完成一个学习应用目标，可获得 %d 分钟娱乐时间。", "date": "日期", "completed": "已完成",
             "record_detail": "记录详情", "done": "完成", "not_done": "未完成", "parent_pin_desc": "修改用于打开家长页的 PIN。", "history": "历史", "no_records": "还没有每日记录。",
-            "no_records_desc": "完成或重置今天的任务后会生成记录。", "reset_today": "重置今天", "summary": "汇总", "tasks": "任务", "steps": "步数", "today": "今天",
+            "no_records_desc": "完成今天的任务后会生成记录。", "reset_today": "重置今天", "summary": "汇总", "tasks": "任务", "steps": "步数", "today": "今天",
             "exercise": "运动", "min_today": "今日分钟", "active_energy": "活动能量", "latest_workout": "最近运动", "health_sync_desc": "读取今天的步数、Apple 运动分钟、活动能量和最近运动。Apple Watch 运动同步到 iPhone 健康 App 后会显示在这里。",
             "current_streak": "当前连续", "last_7_days": "最近 7 天", "perfect_days": "完美天数", "movement_results": "运动结果", "movement_today": "今天：%d 步，%d 分钟运动，%d 千卡。",
             "latest_workout_line": "最近运动：%@，%d 分钟。", "refresh_movement_data": "刷新运动数据", "web_parent_sync": "家长网页同步", "web_parent_sync_desc": "输入家长网页控制台生成的配对码。今天的学习和娱乐时间会上传，方便远程查看。",
@@ -1984,7 +1984,6 @@ struct ContentView: View {
             todayEntertainmentStatusCard
             completionSummaryCard
             movementExemptionCard
-            resetButton
         }
         .padding()
     }
@@ -2049,24 +2048,25 @@ struct ContentView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(screenTimeManager.authorizationState.color)
 
-            Button {
-                Task {
-                    await screenTimeManager.requestAuthorization()
+            if screenTimeManager.authorizationState == .approved {
+                Button {
                     applyScreenTimeLimit()
+                } label: {
+                    Label("保存并启用规则", systemImage: "checkmark.shield.fill")
+                        .frame(maxWidth: .infinity)
                 }
-            } label: {
-                Label("开启 App 管控权限", systemImage: "person.badge.key.fill")
-                    .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button {
+                    Task {
+                        await screenTimeManager.requestAuthorization()
+                    }
+                } label: {
+                    Label(screenTimeManager.authorizationState == .denied ? "重新开启 App 管控权限" : "开启 App 管控权限", systemImage: "person.badge.key.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
-
-            Button {
-                applyScreenTimeLimit()
-            } label: {
-                Label("应用当前规则", systemImage: "slider.horizontal.3")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
 
             if screenTimeManager.authorizationState == .denied || screenTimeManager.authorizationState == .unavailable {
                 Text("开启失败时，请确认在 iPhone 真机上允许屏幕使用时间权限。")
@@ -2465,7 +2465,6 @@ struct ContentView: View {
             parentMovementSettingsCard
             movementExemptionApprovalCard
             entertainmentBalanceRuleCard
-            entertainmentCategoryLimitCard
             cloudSyncCard
             parentPINCard
             securityRecoveryCard
@@ -2600,6 +2599,10 @@ struct ContentView: View {
             }
 
             Text(dailySummaryText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Label("实际已用娱乐：开启 App 管控权限后显示", systemImage: "hourglass")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2963,20 +2966,6 @@ struct ContentView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            #if canImport(FamilyControls)
-            Button {
-                isEntertainmentPickerPresented = true
-            } label: {
-                Label("选择娱乐 APP", systemImage: "gamecontroller.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            #else
-            Text(AppText.t("picker_unavailable"))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            #endif
-
             Toggle("允许未用完时间累积", isOn: $allowEntertainmentCarryover)
             MinuteWheelRow(title: "当前结余", subtitle: "模拟余额，后续接入真实使用扣减", minutes: $entertainmentCarryoverMinutes, range: 0...300, step: 5, iconName: "tray.full.fill", tint: .blue)
             MinuteWheelRow(title: "总余额上限", subtitle: "避免无限攒时间", minutes: $entertainmentBalanceCap, range: 30...600, step: 10, iconName: "lock.fill", tint: .purple)
@@ -2997,7 +2986,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("总上限是所有娱乐和游戏 APP 的合计可用时间，优先级高于视频/游戏分类上限。")
+            Text("总上限是所有娱乐和游戏 APP 的合计可用时间。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -3020,31 +3009,6 @@ struct ContentView: View {
                 iconName: "calendar.badge.clock",
                 tint: .purple
             )
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private var entertainmentCategoryLimitCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Image(systemName: "square.grid.2x2.fill")
-                    .foregroundStyle(.red)
-
-                Text("娱乐分类总量")
-                    .font(.headline)
-            }
-
-            Text("除了单个 APP，还要限制视频类、游戏类等分类总量。实际执行时采用最严格规则。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            MinuteWheelRow(title: "视频类工作日每日上限", subtitle: "例如短视频、动画、播放类 APP", minutes: $weekdayVideoLimitMinutes, range: 0...240, step: 5, iconName: "play.rectangle.fill", tint: .red)
-            MinuteWheelRow(title: "视频类周末每日上限", subtitle: "周六、周日单日限制", minutes: $weekendVideoLimitMinutes, range: 0...360, step: 5, iconName: "play.tv.fill", tint: .red)
-            MinuteWheelRow(title: "游戏类工作日每日上限", subtitle: "工作日游戏合计限制", minutes: $weekdayGameLimitMinutes, range: 0...180, step: 5, iconName: "gamecontroller.fill", tint: .blue)
-            MinuteWheelRow(title: "游戏类周末合计上限", subtitle: "周六周日两天加起来", minutes: $weekendGameCombinedLimitMinutes, range: 0...480, step: 10, iconName: "calendar.badge.clock", tint: .blue)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -3324,25 +3288,6 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.85))
         .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    private var resetButton: some View {
-        Button {
-            mathCompleted = false
-            englishCompleted = false
-            readingCompleted = false
-            taskDCompleted = false
-            taskECompleted = false
-            taskFCompleted = false
-            taskGCompleted = false
-            taskHCompleted = false
-            updateTodayProgress()
-        } label: {
-            Label(AppText.t("reset_today"), systemImage: "arrow.counterclockwise")
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(.blue)
     }
 
     private func appBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
