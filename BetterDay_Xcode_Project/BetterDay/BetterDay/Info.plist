@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Do BetterDay</string>
+	<string>倍塔兔</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconName</key>
@@ -39,7 +39,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Do BetterDay</string>
+	<string>倍塔兔</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -49,9 +49,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Do BetterDay needs read access to steps, exercise minutes, workouts, and active energy so parents and children can track movement goals and unlock earned entertainment time.</string>
+	<string>Do Better Day needs read access to steps, exercise minutes, workouts, and active energy so parents and children can track movement goals and unlock earned entertainment time.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Do BetterDay requests Health access only to support movement goal tracking. The app does not write workout or health records without your permission.</string>
+	<string>Do Better Day requests Health access only to support movement goal tracking. The app does not write workout or health records without your permission.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

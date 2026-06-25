@@ -35,7 +35,7 @@ enum AppText {
     }
 
     private static let english: [String: String] = [
-        "app_name": "BetterDay",
+        "app_name": "Do Better Day",
         "tab_today": "Today",
         "tab_apps": "Apps",
         "tab_move": "Move",
@@ -197,11 +197,11 @@ enum AppText {
             "parent_area_locked": "家长区已锁定", "parent_pin_prompt": "输入家长 PIN 查看记录和设置。", "parent_pin": "家长 PIN", "unlock_parent_area": "解锁家长区",
             "movement_window": "运动时段", "movement_window_desc": "设置每日活动时段和运动奖励。", "reward_rule": "奖励规则", "learning_app_goals": "学习应用目标",
             "child_profile": "孩子资料", "child_name": "孩子姓名", "parent_notes": "家长备注", "incorrect_pin": "PIN 不正确，请重试。",
-            "app_name": "BetterDay", "nav_records": "每日记录", "parent_subtitle": "设置学习应用目标、奖励分钟数、娱乐锁定和运动时段。",
+            "app_name": "倍塔兔", "nav_records": "每日记录", "parent_subtitle": "设置学习应用目标、奖励分钟数、娱乐锁定和运动时段。",
             "screen_time_api": "屏幕使用时间 API", "authorization": "授权：%@", "current_earned_limit": "当前已获得上限：%d 分钟",
             "request_screen_time_permission": "请求屏幕使用时间权限", "select_apps_categories": "选择应用和类别", "apply_earned_limit": "应用已获得上限", "clear_screen_time_restrictions": "清除屏幕使用限制",
             "setup_screen_time": "设置屏幕使用时间", "setup_screen_time_subtitle": "Apple 屏幕使用时间集成准备清单。", "request_permission": "请求权限", "request_permission_desc": "在这台 iPhone 上请求屏幕使用时间权限。",
-            "select_apps": "选择应用", "select_apps_desc": "选择由 BetterDay 管理的游戏或应用。", "apply_limit": "应用限制", "apply_limit_desc": "用已获得娱乐时间应用每日屏幕使用限制。", "monitor_usage": "监测使用",
+            "select_apps": "选择应用", "select_apps_desc": "选择由倍塔兔管理的游戏或应用。", "apply_limit": "应用限制", "apply_limit_desc": "用已获得娱乐时间应用每日屏幕使用限制。", "monitor_usage": "监测使用",
             "monitor_usage_desc": "读取活动报告并更新家长控制台。", "continuous_learning": "连续学习", "day_streak": "%d 天连续", "game_time_unlocked": "娱乐已解锁：%d 分钟", "game_time_locked": "娱乐时间待解锁",
             "min_earned": "分钟已获得", "completed_count": "已完成：%d / %d", "progress_rule": "每完成一个学习应用目标，可获得 %d 分钟娱乐时间。", "date": "日期", "completed": "已完成",
             "record_detail": "记录详情", "done": "完成", "not_done": "未完成", "parent_pin_desc": "修改用于打开家长页的 PIN。", "history": "历史", "no_records": "还没有每日记录。",
@@ -1899,17 +1899,6 @@ struct ContentView: View {
 
             NavigationStack {
                 appBackground {
-                    appRulesView
-                }
-                .navigationTitle("应用管理")
-            }
-            .tabItem {
-                Label("应用管理", systemImage: "app.badge.checkmark")
-            }
-            .tag(2)
-
-            NavigationStack {
-                appBackground {
                     recordsView
                 }
                 .navigationTitle(AppText.t("nav_records"))
@@ -1917,7 +1906,7 @@ struct ContentView: View {
             .tabItem {
                 Label(AppText.t("tab_records"), systemImage: "calendar")
             }
-            .tag(3)
+            .tag(2)
 
             NavigationStack {
                 appBackground {
@@ -1928,7 +1917,7 @@ struct ContentView: View {
             .tabItem {
                 Label("我的", systemImage: "person.crop.circle")
             }
-            .tag(4)
+            .tag(3)
         }
         .onAppear {
             normalizeStoredChineseText()
@@ -2011,38 +2000,21 @@ struct ContentView: View {
         .padding()
     }
 
-    private var appRulesView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("应用管理")
-                    .font(.largeTitle)
-                    .bold()
-
-                Text("选择娱乐应用，并把学习任务对应到具体 APP。")
-                    .foregroundStyle(.secondary)
-            }
-
-            appSelectionCard
-            screenTimeControlCard
-        }
-        .padding()
-    }
-
     private var appSelectionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "app.connected.to.app.below.fill")
                     .foregroundStyle(.purple)
 
-                Text(AppText.t("app_groups"))
+                Text("娱乐和游戏 App")
                     .font(.headline)
             }
 
-            Text(AppText.t("app_groups_desc"))
+            Text("选择需要管控的娱乐、视频和游戏 App。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Text("建议先只选择最需要管控的核心 APP，例如短视频、游戏、直播。其他 APP 后续进入全局统计，不一定强制锁定。")
+            Text("建议先只选择最容易沉迷的 APP，例如短视频、游戏、直播。选择过多时，系统会提示精简。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
@@ -2080,7 +2052,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("开启后，BetterDay 才能选择和限制娱乐、游戏 APP。")
+            Text("开启后，倍塔兔才能选择和限制娱乐、游戏 APP。通常只需要首次授权。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2366,7 +2338,7 @@ struct ContentView: View {
                     .font(.headline)
             }
 
-            Text("告诉我们哪里不好用，或者你希望 BetterDay 增加什么。截图可能包含个人信息，请确认后再上传。")
+            Text("告诉我们哪里不好用，或者你希望倍塔兔增加什么。截图可能包含个人信息，请确认后再上传。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -2483,39 +2455,33 @@ struct ContentView: View {
     }
 
     private var parentView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                Text("请选择已安装的娱乐和游戏 APP")
-                    .font(.title2)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("规则设定")
+                    .font(.largeTitle)
                     .bold()
                     .foregroundStyle(Color(red: 0.10, green: 0.14, blue: 0.22))
 
-                Spacer()
+                appSelectionCard
+                screenTimeControlCard
+                entertainmentWindowCard
+                entertainmentTotalLimitCard
 
-                Button(AppText.t("lock")) {
-                    lockParentArea()
-                }
-                .buttonStyle(.bordered)
+                parentTaskSettingsCard
+                weeklyPlanPreviewCard
+                parentRewardSettingsCard
+                completionSummaryCard
+                parentMovementSettingsCard
+                movementExemptionApprovalCard
+                entertainmentBalanceRuleCard
+                entertainmentCategoryLimitCard
+                cloudSyncCard
+                parentPINCard
+                securityRecoveryCard
             }
-
-            entertainmentWindowCard
-            entertainmentTotalLimitCard
-
-            parentTaskSettingsCard
-            weeklyPlanPreviewCard
-            parentRewardSettingsCard
-            completionSummaryCard
-            parentMovementSettingsCard
-            movementExemptionApprovalCard
-            entertainmentBalanceRuleCard
-            entertainmentCategoryLimitCard
-            cloudSyncCard
-            parentPINCard
-            securityRecoveryCard
-
-            Spacer(minLength: 20)
+            .padding()
+            .padding(.bottom, 120)
         }
-        .padding()
         .simultaneousGesture(
             TapGesture().onEnded {
                 resetParentAutoLockTimer()
