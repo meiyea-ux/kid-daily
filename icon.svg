@@ -1,37 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="#fff8ed"/>
-  <ellipse cx="256" cy="372" rx="165" ry="29" fill="#ff8b22"/>
-  <ellipse cx="203" cy="111" rx="35" ry="102" transform="rotate(-18 203 111)" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
-  <ellipse cx="318" cy="119" rx="38" ry="98" transform="rotate(26 318 119)" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
-  <ellipse cx="207" cy="121" rx="13" ry="65" transform="rotate(-18 207 121)" fill="#ff805e"/>
-  <ellipse cx="319" cy="130" rx="15" ry="61" transform="rotate(26 319 130)" fill="#ff805e"/>
-  <ellipse cx="299" cy="294" rx="135" ry="112" fill="#ffdabc" stroke="#671c0c" stroke-width="8"/>
-  <ellipse cx="261" cy="240" rx="151" ry="109" fill="#fffef8" stroke="#671c0c" stroke-width="9"/>
-  <circle cx="195" cy="232" r="18" fill="#671c0c"/>
-  <circle cx="308" cy="232" r="18" fill="#671c0c"/>
-  <circle cx="201" cy="226" r="6" fill="#fff"/>
-  <circle cx="314" cy="226" r="6" fill="#fff"/>
-  <ellipse cx="145" cy="263" rx="23" ry="11" fill="#ff805e"/>
-  <ellipse cx="356" cy="263" rx="23" ry="11" fill="#ff805e"/>
-  <ellipse cx="251" cy="269" rx="17" ry="11" fill="#ff805e" stroke="#671c0c" stroke-width="5"/>
-  <path d="M251 280v20" stroke="#671c0c" stroke-width="6" stroke-linecap="round"/>
-  <path d="M214 286c8 18 28 20 37 8c9 12 29 10 38-8" fill="none" stroke="#671c0c" stroke-width="6" stroke-linecap="round"/>
-  <rect x="231" y="305" width="41" height="46" rx="17" fill="#ff6c00" stroke="#671c0c" stroke-width="6"/>
-  <rect x="239" y="298" width="12" height="25" fill="#fff" stroke="#671c0c" stroke-width="3"/>
-  <rect x="251" y="298" width="12" height="25" fill="#fff" stroke="#671c0c" stroke-width="3"/>
-  <ellipse cx="380" cy="328" rx="35" ry="44" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
-  <circle cx="420" cy="341" r="24" fill="#fffef8" stroke="#671c0c" stroke-width="7"/>
-  <ellipse cx="204" cy="360" rx="31" ry="50" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
-  <ellipse cx="263" cy="361" rx="31" ry="52" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
+  <ellipse cx="256" cy="452" rx="165" ry="29" fill="#ff8b22"/>
+  <ellipse cx="198" cy="118" rx="35" ry="102" transform="rotate(-18 198 118)" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
+  <ellipse cx="331" cy="128" rx="38" ry="98" transform="rotate(26 331 128)" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
+  <ellipse cx="202" cy="128" rx="13" ry="65" transform="rotate(-18 202 128)" fill="#ff805e"/>
+  <ellipse cx="332" cy="139" rx="15" ry="61" transform="rotate(26 332 139)" fill="#ff805e"/>
+  <ellipse cx="316" cy="344" rx="135" ry="112" fill="#ffdabc" stroke="#671c0c" stroke-width="8"/>
+  <ellipse cx="260" cy="274" rx="151" ry="109" fill="#fffef8" stroke="#671c0c" stroke-width="9"/>
+  <circle cx="196" cy="265" r="18" fill="#671c0c"/>
+  <circle cx="309" cy="265" r="18" fill="#671c0c"/>
+  <circle cx="202" cy="259" r="6" fill="#fff"/>
+  <circle cx="315" cy="259" r="6" fill="#fff"/>
+  <ellipse cx="148" cy="296" rx="23" ry="11" fill="#ff805e"/>
+  <ellipse cx="357" cy="296" rx="23" ry="11" fill="#ff805e"/>
+  <ellipse cx="251" cy="302" rx="17" ry="11" fill="#ff805e" stroke="#671c0c" stroke-width="5"/>
+  <path d="M251 313v20" stroke="#671c0c" stroke-width="6" stroke-linecap="round"/>
+  <path d="M214 319c8 18 28 20 37 8c9 12 29 10 38-8" fill="none" stroke="#671c0c" stroke-width="6" stroke-linecap="round"/>
+  <rect x="231" y="338" width="41" height="46" rx="17" fill="#ff6c00" stroke="#671c0c" stroke-width="6"/>
+  <rect x="239" y="331" width="12" height="25" fill="#fff" stroke="#671c0c" stroke-width="3"/>
+  <rect x="251" y="331" width="12" height="25" fill="#fff" stroke="#671c0c" stroke-width="3"/>
+  <ellipse cx="382" cy="378" rx="35" ry="44" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
+  <circle cx="422" cy="391" r="24" fill="#fffef8" stroke="#671c0c" stroke-width="7"/>
+  <ellipse cx="206" cy="421" rx="31" ry="50" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
+  <ellipse cx="265" cy="422" rx="31" ry="52" fill="#fffef8" stroke="#671c0c" stroke-width="8"/>
   <g fill="#fff" stroke="#ff6c00" stroke-width="7">
-    <circle cx="207" cy="391" r="20"/>
-    <circle cx="256" cy="391" r="20"/>
-    <circle cx="305" cy="391" r="20"/>
+    <circle cx="207" cy="393" r="20"/>
+    <circle cx="256" cy="393" r="20"/>
+    <circle cx="305" cy="393" r="20"/>
   </g>
   <g fill="none" stroke="#671c0c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M195 390l10 10l18 -22"/>
-    <path d="M244 390l10 10l18 -22"/>
-    <path d="M293 390l10 10l18 -22"/>
+    <path d="M195 392l10 10l18 -22"/>
+    <path d="M244 392l10 10l18 -22"/>
+    <path d="M293 392l10 10l18 -22"/>
   </g>
-  <text x="256" y="478" text-anchor="middle" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="78" font-weight="900" fill="#ff5f00">倍塔兔</text>
 </svg>
