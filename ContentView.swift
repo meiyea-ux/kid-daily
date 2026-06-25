@@ -2455,40 +2455,32 @@ struct ContentView: View {
     }
 
     private var parentView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("规则设定")
-                    .font(.largeTitle)
-                    .bold()
-                    .foregroundStyle(Color(red: 0.10, green: 0.14, blue: 0.22))
+        VStack(alignment: .leading, spacing: 18) {
+            Text("选择 App、学习任务、娱乐时段和运动规则。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-                appSelectionCard
-                screenTimeControlCard
-                entertainmentWindowCard
-                entertainmentTotalLimitCard
+            appSelectionCard
+            screenTimeControlCard
+            entertainmentWindowCard
+            entertainmentTotalLimitCard
 
-                parentTaskSettingsCard
-                weeklyPlanPreviewCard
-                parentRewardSettingsCard
-                completionSummaryCard
-                parentMovementSettingsCard
-                movementExemptionApprovalCard
-                entertainmentBalanceRuleCard
-                entertainmentCategoryLimitCard
-                cloudSyncCard
-                parentPINCard
-                securityRecoveryCard
-            }
-            .padding()
-            .padding(.bottom, 120)
+            parentTaskSettingsCard
+            weeklyPlanPreviewCard
+            parentRewardSettingsCard
+            completionSummaryCard
+            parentMovementSettingsCard
+            movementExemptionApprovalCard
+            entertainmentBalanceRuleCard
+            entertainmentCategoryLimitCard
+            cloudSyncCard
+            parentPINCard
+            securityRecoveryCard
         }
+        .padding()
+        .padding(.bottom, 120)
         .simultaneousGesture(
             TapGesture().onEnded {
-                resetParentAutoLockTimer()
-            }
-        )
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0).onChanged { _ in
                 resetParentAutoLockTimer()
             }
         )
