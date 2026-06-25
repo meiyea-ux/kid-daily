@@ -1899,17 +1899,6 @@ struct ContentView: View {
 
             NavigationStack {
                 appBackground {
-                    recordsView
-                }
-                .navigationTitle(AppText.t("nav_records"))
-            }
-            .tabItem {
-                Label(AppText.t("tab_records"), systemImage: "calendar")
-            }
-            .tag(2)
-
-            NavigationStack {
-                appBackground {
                     accountView
                 }
                 .navigationTitle("我的")
@@ -1917,7 +1906,7 @@ struct ContentView: View {
             .tabItem {
                 Label("我的", systemImage: "person.crop.circle")
             }
-            .tag(3)
+            .tag(2)
         }
         .onAppear {
             normalizeStoredChineseText()
@@ -2267,8 +2256,32 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var recordsView: some View {
+    private var accountView: some View {
         VStack(alignment: .leading, spacing: 18) {
+            Text("查看历史记录、提交反馈，并管理家长端和孩子端绑定。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            accountRecordsCard
+            childProfileCard
+            bindingCard
+            feedbackCard
+            accountModeCard
+            cloudSyncCard
+        }
+        .padding()
+    }
+
+    private var accountRecordsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Image(systemName: "calendar.badge.checkmark")
+                    .foregroundStyle(.indigo)
+
+                Text("历史记录")
+                    .font(.headline)
+            }
+
             HStack(spacing: 12) {
                 StatCard(
                     title: AppText.t("current_streak"),
@@ -2287,9 +2300,6 @@ struct ContentView: View {
                 )
             }
 
-            Text(AppText.t("history"))
-                .font(.headline)
-
             if dailyRecords.isEmpty {
                 emptyRecordsView
             } else {
@@ -2306,26 +2316,9 @@ struct ContentView: View {
             }
         }
         .padding()
-    }
-
-    private var accountView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("我的")
-                    .font(.largeTitle)
-                    .bold()
-
-                Text("管理身份、绑定家长端和孩子端。")
-                    .foregroundStyle(.secondary)
-            }
-
-            childProfileCard
-            bindingCard
-            feedbackCard
-            accountModeCard
-            cloudSyncCard
-        }
-        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var feedbackCard: some View {
