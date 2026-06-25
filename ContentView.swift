@@ -85,9 +85,9 @@ enum AppText {
         "done": "Done",
         "not_done": "Not Done",
         "parent_area_locked": "Parent Area Locked",
-        "parent_pin_prompt": "Enter the parent PIN to view records and settings.",
-        "parent_pin": "Parent PIN",
-        "parent_pin_desc": "Change the PIN used to open the Parent tab.",
+        "parent_pin_prompt": "Enter the parent password to view records and settings.",
+        "parent_pin": "Parent Password",
+        "parent_pin_desc": "Change the password used to open rule settings.",
         "unlock_parent_area": "Unlock Parent Area",
         "movement_check": "Movement Check",
         "movement_subtitle": "Sync exercise results from iPhone Health and Apple Watch.",
@@ -115,8 +115,8 @@ enum AppText {
         "movement_today": "Today: %d steps, %d exercise minutes, %d kcal.",
         "latest_workout_line": "Latest workout: %@, %d min.",
         "refresh_movement_data": "Refresh Movement Data",
-        "web_parent_sync": "Web Parent Sync",
-        "web_parent_sync_desc": "Enter the pairing code generated in the parent web dashboard. Today's learning and game time will upload for remote monitoring.",
+        "web_parent_sync": "Family Pairing",
+        "web_parent_sync_desc": "Pair another phone running Better Rabbit to sync rules and view today's records.",
         "pairing_code": "Pairing code",
         "sync_remote_settings": "Sync Remote Settings",
         "uploading": "Uploading...",
@@ -177,9 +177,9 @@ enum AppText {
         "exercise_minutes": "Exercise Minutes",
         "parent_notes": "Parent Notes",
         "parent_notes_desc": "Next build step: add a DeviceActivityMonitor extension so learning app minutes are read automatically instead of checked manually.",
-        "incorrect_pin": "Incorrect PIN. Try again.",
-        "new_parent_pin": "New 4-digit PIN",
-        "save_new_pin": "Save New PIN"
+        "incorrect_pin": "Incorrect password. Try again.",
+        "new_parent_pin": "New 4-digit password",
+        "save_new_pin": "Save New Password"
     ]
 
     private static let translations: [String: [String: String]] = [
@@ -194,7 +194,7 @@ enum AppText {
             "today_learning": "今日学习", "today_message": "%@，完成学习应用目标即可获得娱乐时间。", "daily_progress": "今日进度",
             "math": "数学", "english": "英语", "reading": "阅读", "movement_check": "运动检测", "movement_subtitle": "同步 iPhone 健康和 Apple Watch 的运动数据。",
             "health_data_sync": "健康数据同步", "request_health_permission": "请求健康权限", "sync_health_data": "同步健康数据", "syncing": "同步中...",
-            "parent_area_locked": "规则区已锁定", "parent_pin_prompt": "输入管理 PIN 查看记录和设置。", "parent_pin": "管理 PIN", "unlock_parent_area": "解锁规则区",
+            "parent_area_locked": "规则区已锁定", "parent_pin_prompt": "输入家长密码查看记录和设置。", "parent_pin": "家长密码", "unlock_parent_area": "解锁规则区",
             "movement_window": "运动时段", "movement_window_desc": "设置每日活动时段和运动奖励。", "reward_rule": "奖励规则", "learning_app_goals": "学习应用目标",
             "child_profile": "用户资料", "child_name": "昵称", "parent_notes": "备注", "incorrect_pin": "PIN 不正确，请重试。",
             "app_name": "倍塔兔", "nav_records": "每日记录", "parent_subtitle": "设置学习应用目标、奖励分钟数、娱乐锁定和运动时段。",
@@ -208,8 +208,8 @@ enum AppText {
             "no_records_desc": "完成今天的任务后会生成记录。", "reset_today": "重置今天", "summary": "汇总", "tasks": "任务", "steps": "步数", "today": "今天",
             "exercise": "运动", "min_today": "今日分钟", "active_energy": "活动能量", "latest_workout": "最近运动", "health_sync_desc": "读取今天的步数、Apple 运动分钟、活动能量和最近运动。Apple Watch 运动同步到 iPhone 健康 App 后会显示在这里。",
             "current_streak": "当前连续", "last_7_days": "最近 7 天", "perfect_days": "完美天数", "movement_results": "运动结果", "movement_today": "今天：%d 步，%d 分钟运动，%d 千卡。",
-            "latest_workout_line": "最近运动：%@，%d 分钟。", "refresh_movement_data": "刷新运动数据", "web_parent_sync": "管理网页同步", "web_parent_sync_desc": "输入管理网页控制台生成的配对码。今天的学习和娱乐时间会上传，方便远程查看。",
-            "pairing_code": "配对码", "sync_remote_settings": "同步远程设置", "uploading": "上传中...", "upload_today_record": "上传今日记录", "auth_failed": "授权失败：%@", "screen_time_denied_help": "屏幕使用时间权限被拒绝。请使用真机，确认 Apple Developer 里该 Bundle ID 已开启 Family Controls 能力，然后删除并重装 App 后重新请求。", "opening_picker": "正在打开应用和类别选择器...",
+            "latest_workout_line": "最近运动：%@，%d 分钟。", "refresh_movement_data": "刷新运动数据", "web_parent_sync": "家庭配对", "web_parent_sync_desc": "家人安装同一个 App 后，可以用配对码连接，同步规则并查看今日记录。",
+            "pairing_code": "家庭配对码", "sync_remote_settings": "同步家庭规则", "uploading": "上传中...", "upload_today_record": "上传今日记录给家人查看", "auth_failed": "授权失败：%@", "screen_time_denied_help": "屏幕使用时间权限被拒绝。请使用真机，确认 Apple Developer 里该 Bundle ID 已开启 Family Controls 能力，然后删除并重装 App 后重新请求。", "opening_picker": "正在打开应用和类别选择器...",
             "picker_unavailable": "当前构建不可用 FamilyActivityPicker。", "status_not_requested": "尚未请求屏幕使用时间权限。", "status_denied": "屏幕使用时间权限已被拒绝。", "status_approved": "屏幕使用时间权限已通过。",
             "status_unknown": "未知的屏幕使用时间授权状态。", "requesting_screen_time": "正在请求屏幕使用时间权限...", "approve_before_limit": "应用限制前，请先批准屏幕使用时间权限。", "select_before_limit": "应用屏幕使用限制前，请先选择应用或类别。",
             "limit_applied": "已对所选应用应用屏幕使用限制。已获得上限：%d 分钟。", "limit_zero": "还没有获得娱乐时间。所选应用和类别已被限制。", "restrictions_cleared": "屏幕使用限制已清除。", "unavailable_build": "当前构建不可用 FamilyControls。",
@@ -570,7 +570,7 @@ private extension HKWorkoutActivityType {
 
 @MainActor
 final class CloudSyncManager: ObservableObject {
-    @Published var statusMessage = "请输入管理网页端生成的配对码。"
+    @Published var statusMessage = "请输入另一台倍塔兔 App 生成的家庭配对码。"
     @Published var isUploading = false
 
     private let supabaseUrl = "https://vjxainvzqawflspdchhg.supabase.co"
@@ -610,7 +610,7 @@ final class CloudSyncManager: ObservableObject {
         let trimmedCode = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
         guard !trimmedCode.isEmpty else {
-            statusMessage = "同步设置前，请先输入配对码。"
+            statusMessage = "同步前，请先输入家庭配对码。"
             return nil
         }
 
@@ -621,7 +621,7 @@ final class CloudSyncManager: ObservableObject {
 
         do {
             isUploading = true
-            statusMessage = "正在从管理网页端同步设置..."
+            statusMessage = "正在同步家庭规则..."
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -643,11 +643,11 @@ final class CloudSyncManager: ObservableObject {
             isUploading = false
 
             guard let firstSettings = settings.first else {
-                statusMessage = "没有找到这个配对码对应的远程设置。"
+                statusMessage = "没有找到这个家庭配对码对应的规则。"
                 return nil
             }
 
-            statusMessage = "远程设置已同步。"
+            statusMessage = "家庭规则已同步。"
             return firstSettings
         } catch {
             isUploading = false
@@ -678,7 +678,7 @@ final class CloudSyncManager: ObservableObject {
         let trimmedCode = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
         guard !trimmedCode.isEmpty else {
-            statusMessage = "上传前请先输入配对码。"
+            statusMessage = "上传前请先输入家庭配对码。"
             return
         }
 
@@ -722,7 +722,7 @@ final class CloudSyncManager: ObservableObject {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
 
             if (200...299).contains(statusCode) {
-                statusMessage = "已上传到管理网页端。"
+                statusMessage = "今日记录已同步给家人查看。"
             } else {
                 statusMessage = "上传失败，HTTP \(statusCode)。请检查配对码和 Supabase SQL。"
             }
@@ -1915,7 +1915,8 @@ struct ContentView: View {
                 appBackground {
                     todayView
                 }
-                .navigationTitle(AppText.t("app_name"))
+                .navigationTitle("")
+                .toolbar(.hidden, for: .navigationBar)
             }
             .tabItem {
                 Label(AppText.t("tab_today"), systemImage: "house.fill")
@@ -2436,20 +2437,20 @@ struct ContentView: View {
     private var bindingCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Image(systemName: "qrcode.viewfinder")
+                Image(systemName: "person.2.fill")
                     .foregroundStyle(.blue)
 
-                Text("管理端 / 使用端绑定")
+                Text("家庭配对")
                     .font(.headline)
             }
 
-            Text("可扫码或输入绑定码，远程制定规则、查看今日状态并处理延期申请。")
+            Text("家人也安装倍塔兔后，可以用这个配对码连接。对方输入配对码后，就能查看今日记录并同步家庭规则。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("绑定码")
+                    Text("家庭配对码")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -2468,7 +2469,7 @@ struct ContentView: View {
             .background(Color.white.opacity(0.85))
             .clipShape(RoundedRectangle(cornerRadius: 14))
 
-            Button("刷新绑定码") {
+            Button("生成新的配对码") {
                 parentBindingCode = "BD-\(Int.random(in: 100000...999999))"
             }
             .buttonStyle(.bordered)
@@ -2478,7 +2479,6 @@ struct ContentView: View {
         .background(Color.white.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
-
     private var accountModeCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -2517,9 +2517,8 @@ struct ContentView: View {
             parentMovementSettingsCard
             movementExemptionApprovalCard
             entertainmentBalanceRuleCard
-            cloudSyncCard
+            familyPairingCard
             parentPINCard
-            securityRecoveryCard
         }
         .padding()
         .padding(.bottom, 120)
@@ -2540,10 +2539,10 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .bold()
 
-            Text("请输入管理密码。这里可以修改学习、运动、娱乐和余额规则。")
+            Text("请输入家长密码。这里可以修改学习、运动、娱乐和余额规则。")
                 .foregroundStyle(.secondary)
 
-            SecureField("管理密码", text: $parentPINInput)
+            SecureField("家长密码", text: $parentPINInput)
                 .keyboardType(.numberPad)
                 .textFieldStyle(.roundedBorder)
 
@@ -2561,19 +2560,14 @@ struct ContentView: View {
             }
             .buttonStyle(.borderedProminent)
 
-            Button {
-                parentPINError = "请使用恢复码 \(parentBindingCode) 或管理端确认来重置密码。"
-            } label: {
-                Label("忘记密码？", systemImage: "questionmark.circle")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
+            Text("默认密码是 1234。第一版先不提供找回入口，避免孩子绕过规则。")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
 
             Spacer(minLength: 20)
         }
         .padding()
     }
-
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
@@ -2827,21 +2821,21 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var cloudSyncCard: some View {
+    private var familyPairingCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "icloud.and.arrow.up.fill")
+                Image(systemName: "person.2.fill")
                     .foregroundStyle(.blue)
 
-                Text(AppText.t("web_parent_sync"))
+                Text("家庭配对")
                     .font(.headline)
             }
 
-            Text(AppText.t("web_parent_sync_desc"))
+            Text("家人安装同一个 App 后，可以用配对码连接。使用端生成配对码，管理端输入配对码后，就能同步规则并查看今日记录。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            TextField(AppText.t("pairing_code"), text: $webPairingCode)
+            TextField("家庭配对码", text: $webPairingCode)
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
                 .textFieldStyle(.roundedBorder)
@@ -2849,7 +2843,7 @@ struct ContentView: View {
             Button {
                 syncSettingsFromWeb()
             } label: {
-                Label(AppText.t("sync_remote_settings"), systemImage: "arrow.down.circle.fill")
+                Label("同步家庭规则", systemImage: "arrow.down.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -2858,7 +2852,7 @@ struct ContentView: View {
             Button {
                 uploadTodayRecordToWeb()
             } label: {
-                Label(cloudSyncManager.isUploading ? AppText.t("uploading") : AppText.t("upload_today_record"), systemImage: "arrow.up.doc.fill")
+                Label(cloudSyncManager.isUploading ? AppText.t("uploading") : "上传今日记录给家人查看", systemImage: "arrow.up.doc.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -3116,34 +3110,6 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var securityRecoveryCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "key.fill")
-                    .foregroundStyle(.orange)
-
-                Text("忘记密码与恢复")
-                    .font(.headline)
-            }
-
-            Text("恢复码：\(parentBindingCode)")
-                .font(.headline)
-
-            Text("重置密码不会删除规则和记录。正式版可加入 Face ID、邮箱验证码或管理端确认。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Button("生成新的恢复码") {
-                parentBindingCode = "BD-\(Int.random(in: 100000...999999))"
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
     private var parentTaskSettingsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -3299,19 +3265,19 @@ struct ContentView: View {
                 Image(systemName: "key.fill")
                     .foregroundStyle(.orange)
 
-                Text(AppText.t("parent_pin"))
+                Text("修改家长密码")
                     .font(.headline)
             }
 
-            Text(AppText.t("parent_pin_desc"))
+            Text("用于进入规则设定。建议由家长保管，不要告诉孩子。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            SecureField(AppText.t("new_parent_pin"), text: $newParentPIN)
+            SecureField("新的 4 位密码", text: $newParentPIN)
                 .keyboardType(.numberPad)
                 .textFieldStyle(.roundedBorder)
 
-            Button(AppText.t("save_new_pin")) {
+            Button("保存新密码") {
                 saveNewParentPIN()
             }
             .buttonStyle(.bordered)
@@ -3321,7 +3287,6 @@ struct ContentView: View {
         .background(Color.white.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
-
     private var parentNotesCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(AppText.t("parent_notes"))
