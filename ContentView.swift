@@ -2320,7 +2320,7 @@ struct ContentView: View {
             bindingCard
             feedbackCard
             accountModeCard
-            cloudSyncCard
+            familyPairingCard
         }
         .padding()
     }
